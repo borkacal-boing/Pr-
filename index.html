@@ -640,42 +640,64 @@ const Sound = (() => {
     return ev;
   })();
   const hz = n => 440 * Math.pow(2, (n - 69) / 12);
-  function reed(t, f, dur, v, cutoff, voices){
-    const g = ctx.createGain(), lp = ctx.createBiquadFilter();
+  // Smyčka se jednou předem „nahraje“ do zvukového bufferu a pak se jen přehrává dokola.
+  // Nic se nepočítá za běhu hry, takže hudba nezadrhává ani na slabším telefonu.
+  function reed(c, dest, t, f, dur, v, cutoff, voices){
+    const g = c.createGain(), lp = c.createBiquadFilter();
     lp.type = "lowpass"; lp.frequency.value = cutoff; lp.Q.value = 0.8;
     const a = Math.min(0.035, dur*0.3);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + a);
     g.gain.setValueAtTime(v*0.92, t + Math.max(a, dur - 0.05)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
     voices.forEach(([type, mult, det, lev]) => {
-      const o = ctx.createOscillator(), og = ctx.createGain();
+      const o = c.createOscillator(), og = c.createGain();
       o.type = type; o.frequency.value = f*mult; o.detune.value = det; og.gain.value = lev;
       o.connect(og).connect(lp); o.start(t); o.stop(t + dur + 0.08);
     });
-    lp.connect(g).connect(musicBus);
+    lp.connect(g).connect(dest);
   }
   // musette: dva jazýčky lehce rozladěné proti sobě + tišší oktáva dolů
   const MUSETTE = [["sawtooth",1,0,.5],["sawtooth",1,14,.42],["square",.5,-4,.22]];
   const BASSREED = [["sawtooth",1,0,.6],["square",1,6,.3]];
-  function playStep(i, t){
-    EVENTS[i].forEach(e => {
-      if (e.k === "mel") reed(t, hz(e.n), e.len*E8*0.92, 0.16, 2600, MUSETTE);
-      else if (e.k === "bass") reed(t, hz(e.n), E8*0.8, 0.2, 700, BASSREED);
-      else e.ns.forEach(n => reed(t, hz(n), E8*0.45, 0.06, 1500, BASSREED));
-    });
-  }
-  let timer = null, step = 0, nextT = 0;
-  function tick(){
-    while (nextT < ctx.currentTime + 0.3){
-      playStep(step, nextT);
-      nextT += E8; step = (step + 1) % STEPS;
+  let loopBuf = null, rendering = null, src = null;
+  function renderLoop(){
+    if (loopBuf) return Promise.resolve(loopBuf);
+    if (rendering) return rendering;
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!OAC) return Promise.reject(new Error("no offline audio"));
+    const sr = ctx.sampleRate, loopLen = STEPS * E8, tail = 0.4;
+    const total = Math.ceil((loopLen + tail) * sr), n = Math.round(loopLen * sr);
+    const off = new OAC(1, total, sr);
+    for (let i=0;i<STEPS;i++){
+      const t = i * E8;
+      EVENTS[i].forEach(e => {
+        if (e.k === "mel") reed(off, off.destination, t, hz(e.n), e.len*E8*0.92, 0.16, 2600, MUSETTE);
+        else if (e.k === "bass") reed(off, off.destination, t, hz(e.n), E8*0.8, 0.2, 700, BASSREED);
+        else e.ns.forEach(m => reed(off, off.destination, t, hz(m), E8*0.45, 0.06, 1500, BASSREED));
+      });
     }
+    const done = new Promise((res, rej) => {
+      off.oncomplete = ev => res(ev.renderedBuffer);
+      const pr = off.startRendering();
+      if (pr && pr.then) pr.then(res, rej);
+    });
+    rendering = done.then(rb => {
+      // dozvuk posledních tónů přeneseme na začátek, aby smyčka navazovala bez švu
+      const out = ctx.createBuffer(1, n, sr), d = out.getChannelData(0), r = rb.getChannelData(0);
+      d.set(r.subarray(0, n));
+      for (let i=n; i<r.length; i++) d[i - n] += r[i];
+      return loopBuf = out;
+    });
+    return rendering;
   }
   function musicStart(){
-    if (timer || vol.music <= 0 || document.hidden || !ac() || ctx.state !== "running") return;
-    step = 0; nextT = ctx.currentTime + 0.1;
-    tick(); timer = setInterval(tick, 80);
+    if (src || vol.music <= 0 || document.hidden || !ac() || ctx.state !== "running") return;
+    renderLoop().then(buf => {
+      if (src || vol.music <= 0 || document.hidden || ctx.state !== "running") return;
+      src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+      src.connect(musicBus); src.start(ctx.currentTime + 0.05);
+    }).catch(() => {});
   }
-  function musicStop(){ if (timer){ clearInterval(timer); timer = null; } }
+  function musicStop(){ if (src){ try { src.stop(); } catch(e){} src.disconnect(); src = null; } }
   function duck(sec){
     if (!musicOut) return;
     const t = ctx.currentTime;
