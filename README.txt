@@ -8,4 +8,4 @@ PRŠÍ – PWA pro iPhone
    Ikona "Prší" se pak spouští na celou obrazovku a hra funguje i bez internetu.
 
 Rozehraná hra i skóre se ukládají v telefonu, takže po zavření aplikace se pokračuje tam, kde se skončilo.
-Při úpravě hry zvyš v sw.js číslo v "prsi-v13" (na v2…), aby si telefon stáhl novou verzi.
+Při úpravě hry zvyš v sw.js číslo v "prsi-v14" (na v2…), aby si telefon stáhl novou verzi.

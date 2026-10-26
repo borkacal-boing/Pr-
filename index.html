@@ -128,7 +128,10 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
 .deck .card:nth-child(1){transform:translate(4px,4px)}
 .deck .card:nth-child(2){transform:translate(2px,2px)}
 .deck:disabled{cursor:default}
+.deck.ready .card:last-of-type{box-shadow:0 0 0 2px rgba(221,183,92,.55), 0 8px 16px rgba(0,0,0,.4)}
 .deck.live .card:last-of-type{box-shadow:0 0 0 3px var(--brass), 0 8px 16px rgba(0,0,0,.4)}
+.deck{touch-action:none;-webkit-touch-callout:none}
+.phand.drop-here::after{content:"";position:absolute;left:-6px;right:-6px;top:6px;bottom:-4px;border-radius:16px;border:3px dashed var(--brass);background:rgba(221,183,92,.12);pointer-events:none;z-index:40}
 .count{position:absolute;right:-10px;bottom:-10px;min-width:34px;height:34px;padding:0 6px;border-radius:17px;background:var(--ink);color:var(--paper);border:2px solid var(--brass);font-weight:700;font-size:calc(16px * var(--k));display:grid;place-items:center;font-variant-numeric:tabular-nums;z-index:2}
 .pile .card{position:absolute;left:0;top:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r))}
 .pile .card.from-p{animation:fromP .38s cubic-bezier(.2,.8,.3,1)}
@@ -902,6 +905,7 @@ function render(){
     `<span class="count" aria-hidden="true">${deckN}</span>`;
   $("deck").disabled = !mine;
   $("deck").classList.toggle("live", mine && !S.p.some(valid));
+  $("deck").classList.toggle("ready", mine && !S.ace && S.deck.length + S.pile.length > 1);
 
   const shown = S.pile.slice(-4);
   $("pile").innerHTML = shown.map(c => {
@@ -1074,7 +1078,50 @@ function endDrag(e, cancelled){
 }
 $("phand").addEventListener("pointerup", e => endDrag(e, false));
 $("phand").addEventListener("pointercancel", e => endDrag(e, true));
-$("deck").onclick = onPass;
+$("deck").onclick = () => { if (deckSuppress){ deckSuppress = false; return; } onPass(); };
+
+/* líznutí tažením: chyť kartu z balíčku a stáhni ji dolů do své ruky */
+let deckDrag = null, deckSuppress = false;
+const overHand = y => y > $("phand").getBoundingClientRect().top - 10;
+$("deck").addEventListener("pointerdown", e => {
+  if (S.over || S.turn !== "p" || S.ace || deckDrag) return;
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  if (!$("deck").querySelector(".card")) return;
+  deckDrag = {id: e.pointerId, x0: e.clientX, y0: e.clientY, on: false, ghost: null};
+  try { $("deck").setPointerCapture(e.pointerId); } catch(_) {}
+});
+$("deck").addEventListener("pointermove", e => {
+  const d = deckDrag; if (!d || e.pointerId !== d.id) return;
+  const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+  if (!d.on){
+    if (Math.hypot(dx, dy) < 10) return;
+    d.on = true;
+    const top = [...$("deck").querySelectorAll(".card")].pop(), r = top.getBoundingClientRect();
+    const g = top.cloneNode(true);
+    g.classList.add("ghost-card");
+    g.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
+    document.body.appendChild(g); d.ghost = g;
+  }
+  d.ghost.style.transform = `translate(${dx}px, ${dy}px) rotate(${Math.max(-12, Math.min(12, dx/12))}deg) scale(1.06)`;
+  $("phand").classList.toggle("drop-here", overHand(e.clientY));
+});
+function endDeckDrag(e, cancelled){
+  const d = deckDrag; if (!d || e.pointerId !== d.id) return;
+  deckDrag = null;
+  $("phand").classList.remove("drop-here");
+  if (!d.on) return;                       // obyčejné klepnutí – vyřeší "click"
+  deckSuppress = true; setTimeout(() => { deckSuppress = false; }, 400);
+  if (cancelled || !overHand(e.clientY) || S.over || S.turn !== "p"){
+    d.ghost.style.transition = "transform .22s ease";
+    d.ghost.style.transform = "translate(0,0)";
+    setTimeout(() => d.ghost.remove(), 230);
+    return;
+  }
+  d.ghost.remove();
+  onPass();
+}
+$("deck").addEventListener("pointerup", e => endDeckDrag(e, false));
+$("deck").addEventListener("pointercancel", e => endDeckDrag(e, true));
 $("act").onclick = onPass;
 addEventListener("pointerdown", () => Sound.unlock(), {passive:true});
 addEventListener("keydown", () => Sound.unlock());
