@@ -26,15 +26,18 @@
   --paper:#fbf6e8; --ink:#2a1d12; --red:#b8261f;
   --f-disp:"Alegreya SC", Georgia, "Times New Roman", serif;
   --f-ui:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
-  --cw:min(22vw, 13.4vh, 150px);
+  --cw0:min(22vw, 13.4vh, 150px);
+  --k:1; --kc:1;
+  --fit:1;
+  --cw:calc(var(--cw0) * var(--kc) * var(--fit));
   --ch:calc(var(--cw) * 1.5);
-  --rw:calc(var(--cw) * .6);
+  --rw:calc(var(--cw0) * .6);
   color-scheme:dark;
 }
 html{box-sizing:border-box;height:100%;background:var(--wood)}
 *,*::before,*::after{box-sizing:inherit}
 body{
-  height:100%;margin:0;overflow:hidden;color:var(--chalk);font-family:var(--f-ui);font-size:17px;
+  height:100%;margin:0;overflow:hidden;color:var(--chalk);font-family:var(--f-ui);font-size:calc(17px * var(--k));
   background:
     repeating-linear-gradient(92deg, rgba(0,0,0,.10) 0 2px, transparent 2px 9px, rgba(255,255,255,.03) 9px 11px, transparent 11px 23px),
     linear-gradient(180deg, var(--wood-hi), var(--wood));
@@ -57,23 +60,41 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
 .table > *{position:relative;min-width:0}
 
 /* top bar */
-.bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.score{font-family:var(--f-disp);font-size:clamp(17px,4.6vw,20px);letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:6px 8px;flex-wrap:wrap}
+.score{font-family:var(--f-disp);font-size:calc(clamp(17px,4.6vw,20px) * var(--k));letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
 .score b{color:var(--brass);font-weight:700;padding:0 4px}
 .wallet{display:flex;flex-direction:column;line-height:1.1;min-width:0}
-.credit{font-family:var(--f-disp);font-weight:700;font-size:clamp(21px,5.6vw,26px);color:var(--brass);font-variant-numeric:tabular-nums;white-space:nowrap}
+.credit{font-family:var(--f-disp);font-weight:700;font-size:calc(clamp(21px,5.6vw,26px) * var(--k));color:var(--brass);font-variant-numeric:tabular-nums;white-space:nowrap}
 .credit.low{color:#ff9a7a}
 .credit.bump{animation:bump .6s ease-out}
 @keyframes bump{30%{transform:scale(1.18)}}
-.wallet .score{font-family:var(--f-ui);font-size:14px;letter-spacing:0;color:var(--chalk-dim)}
-.money{display:block;font-family:var(--f-disp);font-weight:700;font-size:34px;text-align:center;margin:4px 0 8px;font-variant-numeric:tabular-nums}
+.wallet .score{font-family:var(--f-ui);font-size:calc(14px * var(--k));letter-spacing:0;color:var(--chalk-dim)}
+.money{display:block;font-family:var(--f-disp);font-weight:700;font-size:calc(34px * var(--k));text-align:center;margin:4px 0 8px;font-variant-numeric:tabular-nums}
 .money.plus{color:var(--felt)} .money.minus{color:var(--red)}
 .tools{display:flex;gap:8px}
-.ghost{min-height:44px;padding:0 12px;white-space:nowrap;border-radius:12px;border:1.5px solid rgba(244,238,219,.45);background:rgba(0,0,0,.18);font-size:16px;font-weight:500}
+.ghost.icon{width:44px;padding:0;display:grid;place-items:center}
+.ghost.icon.burger{width:52px;min-height:calc(48px * var(--k))}
+.menu{display:flex;flex-direction:column;gap:12px}
+.menu-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.menu-head h2{margin:0}
+.x{width:48px;height:48px;border-radius:14px;border:2px solid #d9cba3;background:#fff;color:var(--ink);font-size:calc(30px * var(--k));line-height:1;display:grid;place-items:center}
+.menu-list{display:flex;flex-direction:column;gap:10px}
+.menu-list button{min-height:calc(56px * var(--k));border-radius:14px;border:2px solid #d9cba3;background:#fff;color:var(--ink);font-size:calc(20px * var(--k));font-weight:700;text-align:left;padding:0 18px}
+.menu-list button:active{background:#f2ead2}
+.menu-list button:disabled{opacity:.4;cursor:default}
+.menu-list .danger{color:var(--red);border-color:#e3b7ad}
+.sheet h3{font-family:var(--f-disp);font-size:calc(22px * var(--k));margin:6px 0 0}
+.slider{display:grid;grid-template-columns:7.5em minmax(0,1fr) 3.4em;align-items:center;gap:10px;font-size:calc(18px * var(--k));font-weight:500}
+.slider output{text-align:right;font-variant-numeric:tabular-nums;font-size:calc(16px * var(--k));color:#6b5a44}
+.slider input{width:100%;height:44px;accent-color:var(--felt);background:transparent;margin:0}
+.danger-btn{border:0;background:var(--red);color:#fff}
+@media (max-width:440px){ .slider{grid-template-columns:6.2em minmax(0,1fr) 3em;font-size:calc(17px * var(--k))} }
+@media (max-width:440px){ .table{padding-left:10px;padding-right:10px} .tools{gap:5px} .ghost{padding:0 8px;font-size:calc(15px * var(--k))} .ghost.icon{width:40px} .wallet .score{font-size:calc(13px * var(--k))} }
+.ghost{min-height:calc(44px * var(--k));padding:0 12px;white-space:nowrap;border-radius:12px;border:1.5px solid rgba(244,238,219,.45);background:rgba(0,0,0,.18);font-size:calc(16px * var(--k));font-weight:500}
 .ghost:active{background:rgba(0,0,0,.35)}
 
 /* labels */
-.who{font-family:var(--f-disp);font-size:16px;letter-spacing:.08em;color:var(--chalk-dim);text-align:center;margin:0}
+.who{font-family:var(--f-disp);font-size:calc(16px * var(--k));letter-spacing:.08em;color:var(--chalk-dim);text-align:center;margin:0}
 
 /* hands */
 .hand{display:flex;justify-content:center;align-items:flex-end;width:100%}
@@ -108,7 +129,7 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
 .deck .card:nth-child(2){transform:translate(2px,2px)}
 .deck:disabled{cursor:default}
 .deck.live .card:last-of-type{box-shadow:0 0 0 3px var(--brass), 0 8px 16px rgba(0,0,0,.4)}
-.count{position:absolute;right:-10px;bottom:-10px;min-width:34px;height:34px;padding:0 6px;border-radius:17px;background:var(--ink);color:var(--paper);border:2px solid var(--brass);font-weight:700;font-size:16px;display:grid;place-items:center;font-variant-numeric:tabular-nums;z-index:2}
+.count{position:absolute;right:-10px;bottom:-10px;min-width:34px;height:34px;padding:0 6px;border-radius:17px;background:var(--ink);color:var(--paper);border:2px solid var(--brass);font-weight:700;font-size:calc(16px * var(--k));display:grid;place-items:center;font-variant-numeric:tabular-nums;z-index:2}
 .pile .card{position:absolute;left:0;top:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r))}
 .pile .card.from-p{animation:fromP .38s cubic-bezier(.2,.8,.3,1)}
 .pile .card.from-r{animation:fromR .38s cubic-bezier(.2,.8,.3,1)}
@@ -116,14 +137,14 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
 @keyframes fromR{from{transform:translate(0,-35vh) rotate(0deg) scale(.7)}}
 .empty{width:100%;height:100%;border-radius:calc(var(--cw) * .085);border:2px dashed rgba(244,238,219,.3)}
 
-.chip{display:inline-flex;align-items:center;gap:8px;padding:4px 14px 4px 6px;border-radius:999px;background:var(--paper);color:var(--ink);font-weight:700;font-size:17px;box-shadow:0 3px 8px rgba(0,0,0,.35)}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:4px 14px 4px 6px;border-radius:999px;background:var(--paper);color:var(--ink);font-weight:700;font-size:calc(17px * var(--k));box-shadow:0 3px 8px rgba(0,0,0,.35)}
 .chip svg{width:30px;height:30px}
 .status{width:min(100%, 30em);text-align:center;padding:8px 14px;border-radius:14px;background:rgba(0,0,0,.26);border:1px solid rgba(221,183,92,.45);line-height:1.3}
-.status .log{display:block;font-size:15px;color:var(--chalk-dim);min-height:1.3em}
-.status .say{display:block;font-size:clamp(17px, 4.4vw, 20px);font-weight:700;text-wrap:balance}
+.status .log{display:block;font-size:calc(15px * var(--k));color:var(--chalk-dim);min-height:1.3em}
+.status .say{display:block;font-size:calc(clamp(17px, 4.4vw, 20px) * var(--k));font-weight:700;text-wrap:balance}
 
 .actions{display:flex;justify-content:center}
-.act{min-height:56px;min-width:min(100%, 240px);padding:0 26px;border:0;border-radius:16px;background:var(--brass);color:var(--ink);font-size:20px;font-weight:700;box-shadow:0 4px 0 var(--brass-deep), 0 8px 16px rgba(0,0,0,.35);transition:transform .1s, opacity .2s}
+.act{min-height:calc(56px * var(--k));min-width:min(100%, 240px);padding:0 26px;border:0;border-radius:16px;background:var(--brass);color:var(--ink);font-size:calc(20px * var(--k));font-weight:700;box-shadow:0 4px 0 var(--brass-deep), 0 8px 16px rgba(0,0,0,.35);transition:transform .1s, opacity .2s}
 .act:active{transform:translateY(3px);box-shadow:0 1px 0 var(--brass-deep)}
 .act:disabled{opacity:.45;cursor:default;transform:none}
 
@@ -131,16 +152,16 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
 .overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(8,22,14,.68);padding:20px max(16px, env(safe-area-inset-right, 0px)) 20px max(16px, env(safe-area-inset-left, 0px));animation:fade .2s}
 @keyframes fade{from{opacity:0}}
 .sheet{width:min(100%, 430px);max-height:100%;overflow:auto;background:var(--paper);color:var(--ink);border-radius:22px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
-.sheet h2{font-family:var(--f-disp);font-weight:700;font-size:28px;margin:0 0 6px;text-wrap:balance}
-.sheet p{font-size:18px;line-height:1.45;margin:0 0 14px}
-.sheet ul{padding-left:1.1em;margin:0 0 16px;font-size:18px;line-height:1.45}
+.sheet h2{font-family:var(--f-disp);font-weight:700;font-size:calc(28px * var(--k));margin:0 0 6px;text-wrap:balance}
+.sheet p{font-size:calc(18px * var(--k));line-height:1.45;margin:0 0 14px}
+.sheet ul{padding-left:1.1em;margin:0 0 16px;font-size:calc(18px * var(--k));line-height:1.45}
 .sheet li + li{margin-top:6px}
 .suits{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
-.suits button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;border-radius:16px;border:2px solid #d9cba3;background:#fff;color:var(--ink);font-size:19px;font-weight:700}
+.suits button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;border-radius:16px;border:2px solid #d9cba3;background:#fff;color:var(--ink);font-size:calc(19px * var(--k));font-weight:700}
 .suits button:active{background:#f2ead2}
 .suits svg{width:58px;height:58px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
-.row button{flex:1 1 140px;min-height:52px;border-radius:14px;font-size:18px;font-weight:700}
+.row button{flex:1 1 140px;min-height:calc(52px * var(--k));border-radius:14px;font-size:calc(18px * var(--k));font-weight:700}
 .primary{border:0;background:var(--felt);color:var(--chalk)}
 .second{border:2px solid #cbbd94;background:#fff;color:var(--ink)}
 .big-emblem{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
@@ -155,31 +176,31 @@ svg .rib{font-family:var(--f-disp);font-weight:700;font-size:12.5px;letter-spaci
 
 /* malá výška na výšku */
 @media (orientation: portrait) and (max-height:600px){
-  :root{--cw:min(18vw, 12vh, 100px)}
-  .act{min-height:50px}
+  :root{--cw0:min(18vw, 12vh, 100px)}
+  .act{min-height:calc(50px * var(--k))}
 }
 
 /* tablet: větší písmo a tlačítka */
-@media (min-width:700px) and (min-height:700px){
-  body{font-size:19px}
-  .ghost{min-height:52px;padding:0 18px;font-size:19px}
-  .wallet .score{font-size:16px}
-  .who{font-size:19px}
-  .status .log{font-size:17px}
-  .status .say{font-size:23px}
-  .act{min-height:66px;font-size:23px;padding:0 34px;min-width:280px}
-  .chip{font-size:20px}
+@media (min-width:700px) and (min-height:calc(700px * var(--k))){
+  body{font-size:calc(19px * var(--k))}
+  .ghost{min-height:calc(52px * var(--k));padding:0 18px;font-size:calc(19px * var(--k))}
+  .wallet .score{font-size:calc(16px * var(--k))}
+  .who{font-size:calc(19px * var(--k))}
+  .status .log{font-size:calc(17px * var(--k))}
+  .status .say{font-size:calc(23px * var(--k))}
+  .act{min-height:calc(66px * var(--k));font-size:calc(23px * var(--k));padding:0 34px;min-width:280px}
+  .chip{font-size:calc(20px * var(--k))}
   .chip svg{width:36px;height:36px}
   .sheet{width:min(100%, 520px);padding:30px}
-  .sheet h2{font-size:34px}
-  .sheet p,.sheet ul{font-size:20px}
+  .sheet h2{font-size:calc(34px * var(--k))}
+  .sheet p,.sheet ul{font-size:calc(20px * var(--k))}
   .suits svg{width:72px;height:72px}
   .table{padding:16px 22px 20px;gap:10px}
 }
 
 /* na šířku: soupeř nahoře mezi kreditem a tlačítky, uprostřed balíčky vedle zpráv, dole ruka přes celou šířku */
 @media (orientation: landscape){
-  :root{--cw:min(19.5vh, 11vw, 150px);--rw:calc(var(--cw) * .52)}
+  :root{--cw0:min(19.5vh, 11vw, 150px);--rw:calc(var(--cw0) * .52)}
   .table{
     grid-template-columns:auto minmax(0,1fr) auto;
     grid-template-rows:auto minmax(0,1fr) auto;
@@ -198,32 +219,56 @@ svg .rib{font-family:var(--f-disp);font-weight:700;font-size:12.5px;letter-spaci
   #suitChip[hidden] + .status + .actions{grid-column:1 / -1}
   .mine{grid-area:mine}
   .phand{padding-top:14px;height:calc(var(--ch) + 16px)}
-  .who{font-size:14px}
+  .who{font-size:calc(14px * var(--k))}
   .status{padding:6px 12px}
-  .status .say{font-size:clamp(16px, 2.6vw, 22px)}
-  .act{min-height:50px}
+  .status .say{font-size:calc(clamp(16px, 2.6vw, 22px) * var(--k))}
+  .act{min-height:calc(50px * var(--k))}
   .overlay{padding-top:max(12px, env(safe-area-inset-top, 0px));padding-bottom:max(12px, env(safe-area-inset-bottom, 0px))}
   .sheet{max-height:calc(100% - 4px);padding:18px 22px}
   .suits{grid-template-columns:repeat(4, 1fr)}
 }
 @media (orientation: landscape) and (max-height:500px){
-  .ghost{min-height:40px;padding:0 10px;font-size:15px}
-  .credit{font-size:20px}
-  .status .log{font-size:13px}
-  .sheet h2{font-size:24px}
-  .sheet p,.sheet ul{font-size:16px;margin-bottom:10px}
-  .suits button{padding:8px 4px;font-size:16px}
+  .ghost{min-height:calc(40px * var(--k));padding:0 10px;font-size:calc(15px * var(--k))}
+  .credit{font-size:calc(20px * var(--k))}
+  .status .log{font-size:calc(13px * var(--k))}
+  .sheet h2{font-size:calc(24px * var(--k))}
+  .sheet p,.sheet ul{font-size:calc(16px * var(--k));margin-bottom:10px}
+  .suits button{padding:8px 4px;font-size:calc(16px * var(--k))}
   .suits svg{width:44px;height:44px}
-  .row button{min-height:46px}
+  .row button{min-height:calc(46px * var(--k))}
 }
-@media (orientation: portrait) and (min-width:700px) and (min-height:900px){
-  :root{--cw:min(21vw, 14vh, 175px)}
+@media (orientation: portrait) and (min-width:700px) and (min-height:calc(900px * var(--k))){
+  :root{--cw0:min(21vw, 14vh, 175px)}
 }
-@media (orientation: landscape) and (min-height:700px){
-  :root{--cw:min(20vh, 12vw, 170px)}
-  .act{min-height:62px}
-  .who{font-size:18px}
+@media (orientation: landscape) and (min-height:calc(700px * var(--k))){
+  :root{--cw0:min(20vh, 12vw, 170px)}
+  .act{min-height:calc(62px * var(--k))}
+  .who{font-size:calc(18px * var(--k))}
 }
+
+/* velikost písma a karet – volí se v menu, ukládá se v zařízení */
+:root[data-size="large"]{--k:1.15;--kc:1.1}
+:root[data-size="xl"]{--k:1.3;--kc:1.18}
+@media (orientation: portrait) and (max-height:820px){
+  :root[data-size="xl"]{--kc:1.1}
+}
+@media (orientation: portrait) and (max-height:700px){
+  :root[data-size="large"]{--k:1.1;--kc:1}
+  :root[data-size="xl"]{--k:1.18;--kc:1}
+}
+@media (orientation: landscape) and (max-height:699px){
+  :root[data-size="large"]{--k:1.07;--kc:1}
+  :root[data-size="xl"]{--k:1.14;--kc:1}
+}
+.ghost.icon.burger{width:calc(52px * var(--k))}
+.x{width:calc(48px * var(--k));height:calc(48px * var(--k))}
+.count{min-width:calc(34px * var(--k));height:calc(34px * var(--k));border-radius:999px}
+.chip svg{width:calc(30px * var(--k));height:calc(30px * var(--k))}
+.sizes{display:grid;grid-template-columns:repeat(3, 1fr);gap:8px}
+.sizes button{min-height:calc(60px * var(--k));border-radius:14px;border:2px solid #d9cba3;background:#fff;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;font-size:calc(15px * var(--k));font-weight:500}
+.sizes button b{font-family:var(--f-disp);line-height:1}
+.sizes button[aria-pressed="true"]{border-color:var(--felt);background:#e3efe6;box-shadow:inset 0 0 0 1px var(--felt)}
+.reset-defaults{min-height:calc(50px * var(--k));border-radius:14px;border:2px dashed #cbbd94;background:transparent;color:#5b4a33;font-size:calc(17px * var(--k));font-weight:700;margin-top:4px}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -262,8 +307,7 @@ svg .rib{font-family:var(--f-disp);font-weight:700;font-size:12.5px;letter-spaci
     <header class="bar">
       <div class="wallet"><div class="credit" id="credit" aria-label="Kredit">100 Kč</div><div class="score" id="score">Ty 0 : 0 Robot</div></div>
       <div class="tools">
-        <button class="ghost" id="btnRules" type="button">Pravidla</button>
-        <button class="ghost" id="btnNew" type="button">Nová hra</button>
+        <button class="ghost icon burger" id="btnMenu" type="button" aria-label="Menu" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
       </div>
     </header>
     <section class="robot" aria-label="Karty robota">
@@ -308,6 +352,7 @@ svg .rib{font-family:var(--f-disp);font-weight:700;font-size:12.5px;letter-spaci
       <li>Vyhrává, kdo se první zbaví všech karet.</li>
       <li><b>Peníze:</b> začínáš se 100 Kč. Když vyhraješ, dostaneš 10 Kč za každou kartu, která zůstala robotovi. Když prohraješ, zaplatíš 5 Kč za každou kartu, která zůstala tobě.</li>
       <li>První karta na stole na začátku hry nic nedělá: sedma se nebere, u esa se nestojí a svršek nemění barvu.</li>
+      <li>V menu (tlačítko se třemi čárkami) se dá vzdát kolo, začít úplně novou hru a nastavit hlasitost hudby a zvuků.</li>
       <li>Když ti dojdou peníze, hra končí a začíná se znovu se 100 Kč.</li>
     </ul>
     <p>Karty, které právě můžeš zahrát, jsou povytažené a svítí. Ostatní jsou ztmavené.</p>
@@ -315,13 +360,45 @@ svg .rib{font-family:var(--f-disp);font-weight:700;font-size:12.5px;letter-spaci
   </div>
 </div>
 
+<div class="overlay" id="menu" hidden>
+  <div class="sheet menu" role="dialog" aria-labelledby="menuTitle">
+    <div class="menu-head"><h2 id="menuTitle">Menu</h2><button class="x" id="menuClose" type="button" aria-label="Zavřít menu">×</button></div>
+    <div class="menu-list">
+      <button type="button" id="mRules">Pravidla</button>
+      <button type="button" id="mForfeit">Vzdát se</button>
+      <button type="button" id="mReset" class="danger">Nová hra</button>
+    </div>
+    <h3>Hlasitost</h3>
+    <label class="slider" for="volMusic"><span>Hudba</span><input type="range" id="volMusic" min="0" max="100" step="5"><output id="volMusicOut">35 %</output></label>
+    <label class="slider" for="volSfx"><span>Zvuky karet</span><input type="range" id="volSfx" min="0" max="100" step="5"><output id="volSfxOut">80 %</output></label>
+    <h3>Velikost písma a karet</h3>
+    <div class="sizes" id="sizes" role="group" aria-label="Velikost písma a karet">
+      <button type="button" data-size="normal"><b style="font-size:20px">Aa</b>Normální</button>
+      <button type="button" data-size="large"><b style="font-size:26px">Aa</b>Velká</button>
+      <button type="button" data-size="xl"><b style="font-size:32px">Aa</b>Největší</button>
+    </div>
+    <button type="button" class="reset-defaults" id="mDefaults">Výchozí nastavení</button>
+  </div>
+</div>
+
 <div class="overlay" id="confirmNew" hidden>
   <div class="sheet" role="dialog" aria-labelledby="newTitle">
-    <h2 id="newTitle">Začít novou hru?</h2>
-    <p id="newText">Rozehraná hra skončí a karty se znovu zamíchají.</p>
+    <h2 id="newTitle">Vzdát se?</h2>
+    <p id="newText">Vzdaná hra se počítá jako prohra.</p>
     <div class="row">
       <button class="second" id="newNo" type="button">Hrát dál</button>
-      <button class="primary" id="newYes" type="button">Vzdát a začít novou</button>
+      <button class="primary" id="newYes" type="button">Vzdát se</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="confirmReset" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="resetTitle">
+    <h2 id="resetTitle">Opravdu začít novou hru?</h2>
+    <p id="resetText">Smaže se celý postup: kredit se vrátí na 100 Kč a skóre na 0 : 0. Tohle nejde vrátit zpět.</p>
+    <div class="row">
+      <button class="second" id="resetNo" type="button">Ne, hrát dál</button>
+      <button class="danger-btn" id="resetYes" type="button">Ano, začít znovu</button>
     </div>
   </div>
 </div>
@@ -460,6 +537,165 @@ const store = {
   get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
   set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 };
+/* ---------- zvuky a hudba (vše syntetizované, bez souborů) ---------- */
+const Sound = (() => {
+  let ctx = null, noiseBuf = null, sfxBus = null, musicBus = null, musicOut = null;
+  const legacy = store.get("prsi-sound");
+  let vol = store.get("prsi-vol") || {music: 35, sfx: legacy === false ? 0 : 80};
+  const sfxLevel = () => Math.pow(vol.sfx/100, 1.5);
+  const musicLevel = () => Math.pow(vol.music/100, 2) * 0.55;
+  function ac(){
+    if (!ctx){
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return null; }
+      sfxBus = ctx.createGain(); sfxBus.gain.value = sfxLevel(); sfxBus.connect(ctx.destination);
+      musicOut = ctx.createGain(); musicOut.gain.value = 1; musicOut.connect(ctx.destination);
+      musicBus = ctx.createGain(); musicBus.gain.value = musicLevel(); musicBus.connect(musicOut);
+    }
+    if (ctx.state === "suspended" && !document.hidden) ctx.resume().catch(() => {});
+    return ctx;
+  }
+  function noise(){
+    if (noiseBuf) return noiseBuf;
+    const len = Math.floor(ctx.sampleRate * 0.6), b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i=0;i<len;i++) d[i] = Math.random()*2 - 1;
+    return noiseBuf = b;
+  }
+  function burst(t, dur, f0, f1, v, q){
+    const src = ctx.createBufferSource(); src.buffer = noise();
+    const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = q;
+    bp.frequency.setValueAtTime(f0, t); bp.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(bp).connect(g).connect(sfxBus);
+    src.start(t, Math.random()*0.4); src.stop(t + dur + 0.02);
+  }
+  function thump(t, v){
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = "sine";
+    o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(65, t + 0.07);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    o.connect(g).connect(sfxBus); o.start(t); o.stop(t + 0.11);
+  }
+  function brass(t, f, dur, v, vib){
+    const lp = ctx.createBiquadFilter(), g = ctx.createGain(); lp.type = "lowpass";
+    lp.frequency.setValueAtTime(f*1.6, t); lp.frequency.linearRampToValueAtTime(f*5, t + 0.05); lp.frequency.linearRampToValueAtTime(f*2.4, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.03);
+    g.gain.setValueAtTime(v*0.85, t + dur*0.75); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    let lg = null;
+    if (vib){ const lfo = ctx.createOscillator(); lg = ctx.createGain(); lfo.frequency.value = 5.5; lg.gain.value = 28; lfo.connect(lg); lfo.start(t); lfo.stop(t + dur + 0.05); }
+    [0, -7, 7].forEach(det => {
+      const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.setValueAtTime(f, t); o.detune.value = det;
+      if (lg) lg.connect(o.detune);
+      o.connect(lp); o.start(t); o.stop(t + dur + 0.05);
+    });
+    lp.connect(g).connect(sfxBus);
+  }
+  const ready = () => vol.sfx > 0 && ac();
+
+  /* --- akordeon: vlastní hospodská polka, 10 taktů ve 2/4, G dur --- */
+  const BPM = 104, E8 = 60 / BPM / 2;          // délka osminy v sekundách
+  const BARS = 10, STEPS = BARS * 4;
+  // melodie: [MIDI tón, délka v osminách]
+  const MEL = [
+    [71,1],[74,1],[79,1],[74,1],   [71,2],[69,1],[67,1],
+    [69,1],[72,1],[78,1],[72,1],   [69,2],[71,1],[72,1],
+    [74,1],[74,1],[76,1],[74,1],   [72,1],[76,1],[79,1],[76,1],
+    [74,1],[71,1],[67,1],[71,1],   [69,1],[66,1],[69,1],[72,1],
+    [71,1],[69,1],[67,2],          [66,1],[69,1],[72,1],[74,1]
+  ];
+  // akordy po taktech: [basový tón, kvinta v basu, akord]
+  const G = [43,50,[55,59,62]], D7 = [38,45,[54,57,60]], C = [48,43,[55,60,64]];
+  const HARM = [G, G, D7, D7, G, C, G, D7, G, D7];
+  const EVENTS = (() => {
+    const ev = Array.from({length: STEPS}, () => []);
+    let pos = 0;
+    MEL.forEach(([n, len]) => { ev[pos].push({k:"mel", n, len}); pos += len; });
+    HARM.forEach((h, bar) => {
+      const b = bar*4;
+      ev[b].push({k:"bass", n:h[0]}); ev[b+1].push({k:"chord", ns:h[2]});
+      ev[b+2].push({k:"bass", n:h[1]}); ev[b+3].push({k:"chord", ns:h[2]});
+    });
+    return ev;
+  })();
+  const hz = n => 440 * Math.pow(2, (n - 69) / 12);
+  function reed(t, f, dur, v, cutoff, voices){
+    const g = ctx.createGain(), lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = cutoff; lp.Q.value = 0.8;
+    const a = Math.min(0.035, dur*0.3);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + a);
+    g.gain.setValueAtTime(v*0.92, t + Math.max(a, dur - 0.05)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
+    voices.forEach(([type, mult, det, lev]) => {
+      const o = ctx.createOscillator(), og = ctx.createGain();
+      o.type = type; o.frequency.value = f*mult; o.detune.value = det; og.gain.value = lev;
+      o.connect(og).connect(lp); o.start(t); o.stop(t + dur + 0.08);
+    });
+    lp.connect(g).connect(musicBus);
+  }
+  // musette: dva jazýčky lehce rozladěné proti sobě + tišší oktáva dolů
+  const MUSETTE = [["sawtooth",1,0,.5],["sawtooth",1,14,.42],["square",.5,-4,.22]];
+  const BASSREED = [["sawtooth",1,0,.6],["square",1,6,.3]];
+  function playStep(i, t){
+    EVENTS[i].forEach(e => {
+      if (e.k === "mel") reed(t, hz(e.n), e.len*E8*0.92, 0.16, 2600, MUSETTE);
+      else if (e.k === "bass") reed(t, hz(e.n), E8*0.8, 0.2, 700, BASSREED);
+      else e.ns.forEach(n => reed(t, hz(n), E8*0.45, 0.06, 1500, BASSREED));
+    });
+  }
+  let timer = null, step = 0, nextT = 0;
+  function tick(){
+    while (nextT < ctx.currentTime + 0.3){
+      playStep(step, nextT);
+      nextT += E8; step = (step + 1) % STEPS;
+    }
+  }
+  function musicStart(){
+    if (timer || vol.music <= 0 || document.hidden || !ac() || ctx.state !== "running") return;
+    step = 0; nextT = ctx.currentTime + 0.1;
+    tick(); timer = setInterval(tick, 80);
+  }
+  function musicStop(){ if (timer){ clearInterval(timer); timer = null; } }
+  function duck(sec){
+    if (!musicOut) return;
+    const t = ctx.currentTime;
+    musicOut.gain.cancelScheduledValues(t);
+    musicOut.gain.setValueAtTime(musicOut.gain.value, t);
+    musicOut.gain.linearRampToValueAtTime(0.15, t + 0.2);
+    musicOut.gain.setValueAtTime(0.15, t + sec);
+    musicOut.gain.linearRampToValueAtTime(1, t + sec + 1.2);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!ctx) return;
+    if (document.hidden){ musicStop(); ctx.suspend().catch(() => {}); }
+    else ctx.resume().then(musicStart).catch(() => {});
+  });
+
+  return {
+    get vol(){ return {...vol}; },
+    setVol(kind, v){
+      vol[kind] = v; store.set("prsi-vol", vol);
+      if (!ac()) return;
+      const t = ctx.currentTime;
+      if (kind === "sfx") sfxBus.gain.setTargetAtTime(sfxLevel(), t, 0.03);
+      else { musicBus.gain.setTargetAtTime(musicLevel(), t, 0.05); if (v > 0) musicStart(); else musicStop(); }
+    },
+    unlock(){
+      if (!(vol.sfx > 0 || vol.music > 0)) return;
+      const c = ac(); if (!c) return;
+      if (c.state === "running") musicStart();
+      else c.resume().then(musicStart).catch(() => {});
+    },
+    card(){ if (!ready()) return; const t = ctx.currentTime; burst(t, 0.085, 3400, 1700, 0.6, 1.1); thump(t + 0.008, 0.3); },
+    draw(n){ if (!ready()) return; for (let i=0;i<n;i++){ const t = ctx.currentTime + i*0.14; burst(t, 0.17, 800, 3600, 0.38, 0.8); } },
+    deal(){ if (!ready()) return; for (let i=0;i<10;i++){ const t = ctx.currentTime + i*0.07; burst(t, 0.06, 3000, 1900, 0.32, 1.2); } },
+    win(){ if (!ready()) return; duck(2.2); const t = ctx.currentTime + 0.25;
+      [523.25, 659.25, 783.99].forEach((f,i) => brass(t + i*0.15, f, 0.17, 0.11));
+      brass(t + 0.45, 783.99, 0.12, 0.11);
+      [523.25, 659.25, 783.99, 1046.5].forEach(f => brass(t + 0.6, f, 1.1, 0.06)); },
+    lose(){ if (!ready()) return; duck(2.8); const t = ctx.currentTime + 0.25;
+      [392.0, 369.99, 349.23].forEach((f,i) => brass(t + i*0.4, f, 0.38, 0.1));
+      brass(t + 1.2, 329.63, 1.2, 0.1, true); }
+  };
+})();
+
 
 function rnd(n){
   try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
@@ -511,6 +747,7 @@ function play(who, id, chosen){
   const c = scatter(hand.splice(i,1)[0]);
   S.pile.push(c);
   S.anim = {id:c.id, from:who};
+  Sound.card();
   S.suit = c.s;
   if (c.r==="7") S.pen += 2;
   if (c.r==="E") S.ace = true;
@@ -526,6 +763,7 @@ function play(who, id, chosen){
 function pass(who){
   if (S.pen){
     const n = draw(who, S.pen);
+    Sound.draw(n);
     S.log = who==="r" ? `Robot si bere ${n} ${kartu(n)}.` : `Bereš si ${n} ${kartu(n)}.`;
     S.pen = 0;
   } else if (S.ace){
@@ -533,6 +771,7 @@ function pass(who){
     S.log = who==="r" ? "Robot stojí." : "Stojíš, robot hraje dál.";
   } else {
     const n = draw(who, 1);
+    Sound.draw(n);
     S.log = who==="r" ? (n ? "Robot si líznul kartu." : "Robot nemá co hrát.") : (n ? "Líznula sis kartu." : "Balíček je prázdný.");
   }
   S.anim = null;
@@ -547,6 +786,7 @@ function finish(who){
   credit = Math.max(0, credit + S.delta);
   store.set("prsi-credit", credit);
   store.set("prsi-score", score);
+  if (who === "p") Sound.win(); else Sound.lose();
   commit();
 }
 const zust = n => n===1 ? "zůstala" : (n>=2 && n<=4 ? "zůstaly" : "zůstalo");
@@ -672,7 +912,7 @@ function render(){
   S.fresh = []; S.anim = null;
   layout();
 }
-function layout(){
+function layoutHands(){
   const rh = $("rhand"), rn = rh.children.length;
   if (rn){
     const W = rh.clientWidth, cw = rh.children[0].offsetWidth;
@@ -693,6 +933,29 @@ function layout(){
     c.style.top = (lift + row*rowOff) + "px";
   });
   ph.style.height = (lift + ch + (rows-1)*rowOff + 2) + "px";
+}
+// když se vše nevejde (malý displej, hodně karet, velké písmo), karty se postupně zmenší
+let fitting = false;
+function layout(){
+  if (fitting) return;
+  fitting = true;
+  const root = document.documentElement.style;
+  let f = 1;
+  root.setProperty("--fit", f);
+  layoutHands();
+  for (let i=0; i<8; i++){
+    const q = id => $(id).getBoundingClientRect();
+    const piles = document.querySelector(".piles").getBoundingClientRect(), info = document.querySelector(".info").getBoundingClientRect();
+    const rh = q("rhand"), ph = q("phand"), t = q("table");
+    const top = Math.min(piles.top, info.top), bottom = Math.max(piles.bottom, info.bottom);
+    const ok = top >= rh.bottom - 2 && bottom <= ph.top + 4 && ph.bottom <= t.bottom + 1;
+    if (ok) break;
+    f = Math.round((f - 0.06) * 100) / 100;
+    if (f < 0.6) break;
+    root.setProperty("--fit", f);
+    layoutHands();
+  }
+  fitting = false;
 }
 function showEnd(){
   const won = S.over==="p";
@@ -722,6 +985,7 @@ function startNew(){
   clearTimeout(robotTimer); robotTimer = null;
   if (credit <= 0){ credit = 100; score = {p:0, r:0}; store.set("prsi-credit", credit); store.set("prsi-score", score); }
   newGame(S ? S.nextStarter : "p");
+  Sound.deal();
   ["endSheet","confirmNew","picker"].forEach(closeSheet);
   commit();
 }
@@ -738,14 +1002,65 @@ $("pickBack").onclick = () => { pendingSvrsek = null; closeSheet("picker"); };
 $("phand").addEventListener("click", e => { const b = e.target.closest(".card"); if (b) onCard(b); });
 $("deck").onclick = onPass;
 $("act").onclick = onPass;
-$("btnRules").onclick = () => openSheet("rules");
+addEventListener("pointerdown", () => Sound.unlock(), {passive:true});
+addEventListener("keydown", () => Sound.unlock());
 $("rulesOk").onclick = () => closeSheet("rules");
-$("btnNew").onclick = () => {
-  if (S.over) return startNew();
+
+/* menu */
+function paintVol(){
+  const v = Sound.vol;
+  $("volMusic").value = v.music; $("volMusicOut").textContent = v.music ? v.music + " %" : "vyp.";
+  $("volSfx").value = v.sfx;     $("volSfxOut").textContent = v.sfx ? v.sfx + " %" : "vyp.";
+}
+const SIZES = ["normal","large","xl"];
+function applySize(sz){
+  if (!SIZES.includes(sz)) sz = "normal";
+  document.documentElement.dataset.size = sz;
+  store.set("prsi-size", sz);
+  document.querySelectorAll("#sizes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.size === sz ? "true" : "false"));
+  requestAnimationFrame(layout);
+}
+applySize(store.get("prsi-size") || "normal");
+$("sizes").addEventListener("click", e => { const b = e.target.closest("button[data-size]"); if (b) applySize(b.dataset.size); });
+$("mDefaults").onclick = () => {
+  Sound.setVol("music", 35); Sound.setVol("sfx", 80);
+  applySize("normal");
+  paintVol();
+  $("mDefaults").textContent = "Nastavení vráceno";
+  setTimeout(() => { $("mDefaults").textContent = "Výchozí nastavení"; }, 1500);
+};
+$("btnMenu").onclick = () => {
+  $("mForfeit").disabled = !!S.over;
+  paintVol();
+  openSheet("menu");
+};
+$("menuClose").onclick = () => closeSheet("menu");
+$("menu").addEventListener("click", e => { if (e.target.id === "menu") closeSheet("menu"); });
+$("volMusic").addEventListener("input", e => { Sound.setVol("music", +e.target.value); paintVol(); });
+$("volSfx").addEventListener("input", e => { Sound.setVol("sfx", +e.target.value); paintVol(); });
+$("volSfx").addEventListener("change", () => Sound.card());
+$("mRules").onclick = () => { closeSheet("menu"); openSheet("rules"); };
+$("mForfeit").onclick = () => {
+  closeSheet("menu");
+  if (S.over) return;
   const n = S.p.length;
-  $("newText").textContent = `Vzdaná hra se počítá jako prohra: zaplatíš ${5*n} Kč za ${n} ${kartu(n)} v ruce.`;
+  $("newText").textContent = `Vzdané kolo se počítá jako prohra: zaplatíš ${5*n} Kč za ${n} ${kartu(n)} v ruce.`;
   openSheet("confirmNew");
 };
+$("mReset").onclick = () => { closeSheet("menu"); openSheet("confirmReset"); };
+$("resetNo").onclick = () => closeSheet("confirmReset");
+$("resetYes").onclick = () => {
+  closeSheet("confirmReset");
+  clearTimeout(robotTimer); robotTimer = null; pendingSvrsek = null;
+  credit = 100; score = {p:0, r:0};
+  store.set("prsi-credit", credit); store.set("prsi-score", score);
+  S = null;
+  startNew();
+};
+addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  ["menu","rules","confirmNew","confirmReset"].forEach(id => { if (!$(id).hidden) closeSheet(id); });
+});
 $("newNo").onclick = () => closeSheet("confirmNew");
 $("newYes").onclick = () => {
   closeSheet("confirmNew");
