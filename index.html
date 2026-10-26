@@ -88,6 +88,10 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
 .slider output{text-align:right;font-variant-numeric:tabular-nums;font-size:calc(16px * var(--k));color:#6b5a44}
 .slider input{width:100%;height:44px;accent-color:var(--felt);background:transparent;margin:0}
 .danger-btn{border:0;background:var(--red);color:#fff}
+.nowplaying{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:calc(16px * var(--k));color:#5b4a33;margin-top:-4px}
+.nowplaying span{min-width:0}
+.nowplaying button{min-height:calc(44px * var(--k));padding:0 14px;border-radius:12px;border:2px solid #d9cba3;background:#fff;color:var(--ink);font-size:calc(16px * var(--k));font-weight:700}
+.nowplaying button:disabled{opacity:.4}
 @media (max-width:440px){ .slider{grid-template-columns:6.2em minmax(0,1fr) 3em;font-size:calc(17px * var(--k))} }
 @media (max-width:440px){ .table{padding-left:10px;padding-right:10px} .tools{gap:5px} .ghost{padding:0 8px;font-size:calc(15px * var(--k))} .ghost.icon{width:40px} .wallet .score{font-size:calc(13px * var(--k))} }
 .ghost{min-height:calc(44px * var(--k));padding:0 12px;white-space:nowrap;border-radius:12px;border:1.5px solid rgba(244,238,219,.45);background:rgba(0,0,0,.18);font-size:calc(16px * var(--k));font-weight:500}
@@ -388,6 +392,7 @@ svg .rib{font-family:var(--f-disp);font-weight:700;font-size:12.5px;letter-spaci
     </div>
     <h3>Hlasitost</h3>
     <label class="slider" for="volMusic"><span>Hudba</span><input type="range" id="volMusic" min="0" max="100" step="5"><output id="volMusicOut">35 %</output></label>
+    <div class="nowplaying"><span>Hraje: <b id="songName">–</b></span><button type="button" id="mNext">Další písnička</button></div>
     <label class="slider" for="volSfx"><span>Zvuky karet</span><input type="range" id="volSfx" min="0" max="100" step="5"><output id="volSfxOut">80 %</output></label>
     <h3>Velikost písma a karet</h3>
     <div class="sizes" id="sizes" role="group" aria-label="Velikost písma a karet">
@@ -614,34 +619,62 @@ const Sound = (() => {
   }
   const ready = () => vol.sfx > 0 && ac();
 
-  /* --- akordeon: vlastní hospodská polka, 10 taktů ve 2/4, G dur --- */
-  const BPM = 104, E8 = 60 / BPM / 2;          // délka osminy v sekundách
-  const BARS = 10, STEPS = BARS * 4;
-  // melodie: [MIDI tón, délka v osminách]
-  const MEL = [
-    [71,1],[74,1],[79,1],[74,1],   [71,2],[69,1],[67,1],
-    [69,1],[72,1],[78,1],[72,1],   [69,2],[71,1],[72,1],
-    [74,1],[74,1],[76,1],[74,1],   [72,1],[76,1],[79,1],[76,1],
-    [74,1],[71,1],[67,1],[71,1],   [69,1],[66,1],[69,1],[72,1],
-    [71,1],[69,1],[67,2],          [66,1],[69,1],[72,1],[74,1]
+  /* --- akordeon: playlist vlastních hospodských písniček (polky, valčíky, pochod) ---
+     Melodie: tón+oktáva, "-n" = délka v osminách (bez čísla platí výchozí délka písničky),
+     "r" = pauza, "|" = konec taktu. Každá písnička se předem nahraje do bufferu a pak se
+     jen přehraje, takže nic nezadrhává. Po dohrání následuje další v náhodném pořadí. */
+  const CH = {
+    G:[43,50,[55,59,62]],  D7:[38,45,[54,57,60]],  C:[48,43,[55,60,64]],
+    F:[41,48,[53,57,60]],  C7:[48,43,[52,55,58]],  Bb:[46,41,[53,58,62]],
+    D:[38,45,[57,62,66]],  A7:[45,40,[55,61,64]],  Gd:[43,50,[55,59,62]],
+    Am:[45,40,[57,60,64]], E7:[40,47,[56,59,62]],  Dm:[50,45,[57,62,65]],
+    Cm:[48,43,[55,60,64]], G7:[43,50,[53,59,62]],  Fm:[41,48,[53,57,60]]
+  };
+  const TUNES = [
+    { name:"Polka U Zlatého soudku", bpm:104, meter:2, dflt:1,
+      harm:"G G D7 D7 G C G D7 G D7",
+      mel:"b4 d5 g5 d5|b4-2 a4 g4|a4 c5 f#5 c5|a4-2 b4 c5|d5 d5 e5 d5|c5 e5 g5 e5|d5 b4 g4 b4|a4 f#4 a4 c5|b4 a4 g4-2|f#4 a4 c5 d5" },
+    { name:"Valčík u kamen", bpm:150, meter:3, dflt:2,
+      harm:"F F C7 C7 C7 C7 F F F F Bb Bb F C7 F F",
+      mel:"c5-4 a4|a4 c5 f5|e5-4 d5|c5-6|g4 bb4 e5|d5-4 c5|a4 c5 f5|f5-6|a5-4 g5|f5 c5 a4|d5-4 f5|bb4-6|a4 c5 f5|g5-4 e5|f5 c5 a4|f5-6" },
+    { name:"Pivní polka", bpm:116, meter:2, dflt:1,
+      harm:"D D A7 A7 A7 A7 D D Gd Gd D D A7 A7 D D",
+      mel:"a4 d5 f#5 d5|a5-2 f#5-2|e5 g5 e5 c#5|a4-2 r-2|e5 e5 g5 e5|c#5-2 a4-2|d5 f#5 a5 f#5|d5-2 r-2|b4 d5 g5 b5|b5-2 g5-2|a5 f#5 d5 f#5|a5-4|g5 e5 c#5 e5|a5 g5 e5 c#5|d5 f#5 e5 c#5|d5-2 r-2" },
+    { name:"Smutný valčík", bpm:120, meter:3, dflt:2,
+      harm:"Am Am E7 E7 E7 E7 Am Am Dm Dm Am Am E7 E7 Am Am",
+      mel:"e5-4 c5|b4 c5 e5|d5-4 b4|g#4-6|b4 d5 f5|e5-4 d5|c5 b4 a4|a4-6|f5-4 e5|d5 a4 d5|e5-4 c5|a4-6|b4 d5 e5|e5-4 d5|c5 b4 g#4|a4-6" },
+    { name:"Hasičský pochod", bpm:112, meter:2, dflt:1,
+      harm:"C C G7 G7 G7 G7 C C F F C C G7 G7 C C",
+      mel:"g4 c5 e5 g5|g5-2 e5-2|f5 d5 b4 d5|g4-2 b4-2|d5 f5 d5 b4|g4 b4 d5 f5|e5 g5 e5 c5|c5-2 r-2|a5 f5 c5 f5|a5-2 f5-2|g5 e5 c5 e5|g5-4|f5 d5 b4 g4|b4 d5 g5 f5|e5 c5 d5 b4|c5-2 r-2" },
+    { name:"Mazurka od rybníka", bpm:132, meter:3, dflt:2,
+      harm:"G G D7 D7 D7 D7 G G C C G G D7 D7 G G",
+      mel:"d5 g5-1 f#5-1 g5|b5-4 g5|a5 f#5 d5|a5-6|c5 d5-1 e5-1 f#5|a5-4 f#5|g5 d5 b4|g5-6|e5 g5-1 f#5-1 e5|c5-4 e5|d5 b4 g4|d5-6|c5 a4 f#4|a4 d5 c5|b4 a4 f#4|g4-6" }
   ];
-  // akordy po taktech: [basový tón, kvinta v basu, akord]
-  const G = [43,50,[55,59,62]], D7 = [38,45,[54,57,60]], C = [48,43,[55,60,64]];
-  const HARM = [G, G, D7, D7, G, C, G, D7, G, D7];
-  const EVENTS = (() => {
-    const ev = Array.from({length: STEPS}, () => []);
+  const NOTE = {c:0, d:2, e:4, f:5, g:7, a:9, b:11};
+  function midi(tok){
+    const m = /^([a-g])(#|b)?(\d)$/.exec(tok);
+    return 12 * (+m[3] + 1) + NOTE[m[1]] + (m[2] === "#" ? 1 : m[2] === "b" ? -1 : 0);
+  }
+  // rozpis písničky na události po osminách (melodie + levá ruka um-pa / um-pa-pa)
+  function tuneEvents(T){
+    const per = T.meter * 2, harm = T.harm.split(" "), bars = harm.length, ev = [];
     let pos = 0;
-    MEL.forEach(([n, len]) => { ev[pos].push({k:"mel", n, len}); pos += len; });
-    HARM.forEach((h, bar) => {
-      const b = bar*4;
-      ev[b].push({k:"bass", n:h[0]}); ev[b+1].push({k:"chord", ns:h[2]});
-      ev[b+2].push({k:"bass", n:h[1]}); ev[b+3].push({k:"chord", ns:h[2]});
+    T.mel.split("|").forEach(bar => bar.trim().split(/\s+/).forEach(tok => {
+      const [n, l] = tok.split("-"), len = l ? +l : T.dflt;
+      if (n !== "r") ev.push({k:"mel", t:pos, n:midi(n), len});
+      pos += len;
+    }));
+    harm.forEach((h, b) => {
+      const c = CH[h], s = b * per;
+      if (T.meter === 2){
+        ev.push({k:"bass", t:s, n:c[0], len:1}, {k:"chord", t:s+1, ns:c[2]}, {k:"bass", t:s+2, n:c[1], len:1}, {k:"chord", t:s+3, ns:c[2]});
+      } else {
+        ev.push({k:"bass", t:s, n:c[b % 2], len:2}, {k:"chord", t:s+2, ns:c[2]}, {k:"chord", t:s+4, ns:c[2]});
+      }
     });
-    return ev;
-  })();
+    return {ev, steps: bars * per};
+  }
   const hz = n => 440 * Math.pow(2, (n - 69) / 12);
-  // Smyčka se jednou předem „nahraje“ do zvukového bufferu a pak se jen přehrává dokola.
-  // Nic se nepočítá za běhu hry, takže hudba nezadrhává ani na slabším telefonu.
   function reed(c, dest, t, f, dur, v, cutoff, voices){
     const g = c.createGain(), lp = c.createBiquadFilter();
     lp.type = "lowpass"; lp.frequency.value = cutoff; lp.Q.value = 0.8;
@@ -658,46 +691,78 @@ const Sound = (() => {
   // musette: dva jazýčky lehce rozladěné proti sobě + tišší oktáva dolů
   const MUSETTE = [["sawtooth",1,0,.5],["sawtooth",1,14,.42],["square",.5,-4,.22]];
   const BASSREED = [["sawtooth",1,0,.6],["square",1,6,.3]];
-  let loopBuf = null, rendering = null, src = null;
-  function renderLoop(){
-    if (loopBuf) return Promise.resolve(loopBuf);
-    if (rendering) return rendering;
+  const cache = new Map();
+  function renderTune(i){
+    if (cache.has(i)) return cache.get(i);
     const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
     if (!OAC) return Promise.reject(new Error("no offline audio"));
-    const sr = ctx.sampleRate, loopLen = STEPS * E8, tail = 0.4;
-    const total = Math.ceil((loopLen + tail) * sr), n = Math.round(loopLen * sr);
-    const off = new OAC(1, total, sr);
-    for (let i=0;i<STEPS;i++){
-      const t = i * E8;
-      EVENTS[i].forEach(e => {
-        if (e.k === "mel") reed(off, off.destination, t, hz(e.n), e.len*E8*0.92, 0.16, 2600, MUSETTE);
-        else if (e.k === "bass") reed(off, off.destination, t, hz(e.n), E8*0.8, 0.2, 700, BASSREED);
-        else e.ns.forEach(m => reed(off, off.destination, t, hz(m), E8*0.45, 0.06, 1500, BASSREED));
+    const T = TUNES[i], e8 = 60 / T.bpm / 2, {ev, steps} = tuneEvents(T);
+    const sr = ctx.sampleRate, once = steps * e8, total = Math.ceil((once * 2 + 0.8) * sr);
+    const off = new OAC(1, total, sr), d = off.destination;
+    for (let rep = 0; rep < 2; rep++){              // každá písnička zazní dvakrát
+      const base = rep * once + 0.05;
+      ev.forEach(x => {
+        const t = base + x.t * e8;
+        if (x.k === "mel") reed(off, d, t, hz(x.n), x.len*e8*0.92, 0.16, 2600, MUSETTE);
+        else if (x.k === "bass") reed(off, d, t, hz(x.n), x.len*e8*0.8, 0.2, 700, BASSREED);
+        else x.ns.forEach(m => reed(off, d, t, hz(m), e8*0.45, 0.06, 1500, BASSREED));
       });
     }
-    const done = new Promise((res, rej) => {
-      off.oncomplete = ev => res(ev.renderedBuffer);
-      const pr = off.startRendering();
-      if (pr && pr.then) pr.then(res, rej);
+    const p = new Promise((res, rej) => {
+      off.oncomplete = e => res(e.renderedBuffer);
+      const r = off.startRendering();
+      if (r && r.then) r.then(res, rej);
     });
-    rendering = done.then(rb => {
-      // dozvuk posledních tónů přeneseme na začátek, aby smyčka navazovala bez švu
-      const out = ctx.createBuffer(1, n, sr), d = out.getChannelData(0), r = rb.getChannelData(0);
-      d.set(r.subarray(0, n));
-      for (let i=n; i<r.length; i++) d[i - n] += r[i];
-      return loopBuf = out;
-    });
-    return rendering;
+    cache.set(i, p);
+    // v paměti držíme jen pár písniček, ať to slabší telefon nezatěžuje
+    if (cache.size > 3) cache.delete(cache.keys().next().value);
+    return p;
   }
-  function musicStart(){
-    if (src || vol.music <= 0 || document.hidden || !ac() || ctx.state !== "running") return;
-    renderLoop().then(buf => {
-      if (src || vol.music <= 0 || document.hidden || ctx.state !== "running") return;
-      src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
-      src.connect(musicBus); src.start(ctx.currentTime + 0.05);
+  let src = null, order = [], idx = -1, gapTimer = null, wantMusic = false;
+  function nextIndex(){
+    if (!order.length || idx >= order.length - 1){
+      const last = order[order.length - 1];
+      order = shuffle(TUNES.map((_, i) => i));
+      if (order[0] === last && order.length > 1) [order[0], order[1]] = [order[1], order[0]];
+      idx = -1;
+    }
+    return order[++idx];
+  }
+  let current = null;
+  function playTune(i){
+    current = i;
+    renderTune(i).then(buf => {
+      if (!wantMusic || src || current !== i || document.hidden || ctx.state !== "running") return;
+      const s = ctx.createBufferSource(); s.buffer = buf;
+      s.connect(musicBus); s.start(ctx.currentTime + 0.05);
+      src = s;
+      s.onended = () => {
+        if (src !== s) return;
+        src = null;
+        if (!wantMusic) return;
+        gapTimer = setTimeout(() => { gapTimer = null; if (wantMusic && !src) playTune(nextIndex()); }, 1200);
+      };
+      const nxtPeek = order[idx + 1];
+      if (nxtPeek !== undefined) setTimeout(() => renderTune(nxtPeek).catch(() => {}), 1500);
     }).catch(() => {});
   }
-  function musicStop(){ if (src){ try { src.stop(); } catch(e){} src.disconnect(); src = null; } }
+  function musicStart(){
+    wantMusic = vol.music > 0;
+    if (!wantMusic || src || gapTimer || document.hidden || !ac() || ctx.state !== "running") return;
+    playTune(current === null ? nextIndex() : current);
+  }
+  function musicStop(){
+    wantMusic = false;
+    if (gapTimer){ clearTimeout(gapTimer); gapTimer = null; }
+    if (src){ const s = src; src = null; try { s.stop(); } catch(e){} s.disconnect(); }
+  }
+  function musicNext(){
+    if (gapTimer){ clearTimeout(gapTimer); gapTimer = null; }
+    if (src){ const s = src; src = null; try { s.stop(); } catch(e){} s.disconnect(); }
+    current = nextIndex();
+    wantMusic = vol.music > 0;
+    if (wantMusic && ac() && ctx.state === "running") playTune(current);
+  }
   function duck(sec){
     if (!musicOut) return;
     const t = ctx.currentTime;
@@ -715,6 +780,8 @@ const Sound = (() => {
 
   return {
     get vol(){ return {...vol}; },
+    get song(){ return current === null ? "" : TUNES[current].name; },
+    next(){ if (ac()) musicNext(); },
     setVol(kind, v){
       vol[kind] = v; store.set("prsi-vol", vol);
       if (!ac()) return;
@@ -1152,6 +1219,8 @@ $("rulesOk").onclick = () => closeSheet("rules");
 /* menu */
 function paintVol(){
   const v = Sound.vol;
+  $("songName").textContent = v.music ? (Sound.song || "–") : "hudba vypnutá";
+  $("mNext").disabled = !v.music;
   $("volMusic").value = v.music; $("volMusicOut").textContent = v.music ? v.music + " %" : "vyp.";
   $("volSfx").value = v.sfx;     $("volSfxOut").textContent = v.sfx ? v.sfx + " %" : "vyp.";
 }
@@ -1191,6 +1260,7 @@ $("menu").addEventListener("click", e => { if (e.target.id === "menu") closeShee
 $("volMusic").addEventListener("input", e => { Sound.setVol("music", +e.target.value); paintVol(); });
 $("volSfx").addEventListener("input", e => { Sound.setVol("sfx", +e.target.value); paintVol(); });
 $("volSfx").addEventListener("change", () => Sound.card());
+$("mNext").onclick = () => { Sound.next(); paintVol(); };
 $("mRules").onclick = () => { closeSheet("menu"); openSheet("rules"); };
 $("mForfeit").onclick = () => {
   closeSheet("menu");
