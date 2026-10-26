@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Prší</title>
+<meta name="theme-color" content="#3f2512">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prší">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&display=swap&subset=latin-ext">
+<style>
+/* Layout: one-screen card table seen from above — wooden rim (the side gutter), green felt, robot at the far edge, babička's hand at the near edge. */
+:root{
+  --wood:#3f2512; --wood-hi:#5a3519; --felt:#1d6a43; --felt-deep:#0f4128; --felt-hi:#2b8a58;
+  --chalk:#f4eedb; --chalk-dim:#cfe0cf; --brass:#ddb75c; --brass-deep:#94701f;
+  --paper:#fbf6e8; --ink:#2a1d12; --red:#b8261f;
+  --f-disp:"Alegreya SC", Georgia, "Times New Roman", serif;
+  --f-ui:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --cw:min(22vw, 13.4vh, 150px);
+  --ch:calc(var(--cw) * 1.5);
+  --rw:calc(var(--cw) * .6);
+  color-scheme:dark;
+}
+html{box-sizing:border-box;height:100%;background:var(--wood)}
+*,*::before,*::after{box-sizing:inherit}
+body{
+  height:100%;margin:0;overflow:hidden;color:var(--chalk);font-family:var(--f-ui);font-size:17px;
+  background:
+    repeating-linear-gradient(92deg, rgba(0,0,0,.10) 0 2px, transparent 2px 9px, rgba(255,255,255,.03) 9px 11px, transparent 11px 23px),
+    linear-gradient(180deg, var(--wood-hi), var(--wood));
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
+
+.app{height:100%;display:flex;padding-block:10px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.table{
+  position:relative;flex:1;min-width:0;border-radius:30px;overflow:hidden;
+  display:grid;grid-template-rows:auto auto 1fr auto;gap:6px;padding:10px 12px 14px;
+  background:radial-gradient(ellipse 80% 70% at 50% 46%, var(--felt-hi) 0%, var(--felt) 48%, var(--felt-deep) 100%);
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.35), inset 0 0 70px rgba(0,0,0,.5), 0 0 0 5px #24140a, 0 0 0 7px var(--brass-deep), 0 10px 30px rgba(0,0,0,.6);
+}
+.table::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.table > *{position:relative;min-width:0}
+
+/* top bar */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.score{font-family:var(--f-disp);font-size:clamp(17px,4.6vw,20px);letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.score b{color:var(--brass);font-weight:700;padding:0 4px}
+.wallet{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.credit{font-family:var(--f-disp);font-weight:700;font-size:clamp(21px,5.6vw,26px);color:var(--brass);font-variant-numeric:tabular-nums;white-space:nowrap}
+.credit.low{color:#ff9a7a}
+.credit.bump{animation:bump .6s ease-out}
+@keyframes bump{30%{transform:scale(1.18)}}
+.wallet .score{font-family:var(--f-ui);font-size:14px;letter-spacing:0;color:var(--chalk-dim)}
+.money{display:block;font-family:var(--f-disp);font-weight:700;font-size:34px;text-align:center;margin:4px 0 8px;font-variant-numeric:tabular-nums}
+.money.plus{color:var(--felt)} .money.minus{color:var(--red)}
+.tools{display:flex;gap:8px}
+.ghost{min-height:44px;padding:0 12px;white-space:nowrap;border-radius:12px;border:1.5px solid rgba(244,238,219,.45);background:rgba(0,0,0,.18);font-size:16px;font-weight:500}
+.ghost:active{background:rgba(0,0,0,.35)}
+
+/* labels */
+.who{font-family:var(--f-disp);font-size:16px;letter-spacing:.08em;color:var(--chalk-dim);text-align:center;margin:0}
+
+/* hands */
+.hand{display:flex;justify-content:center;align-items:flex-end;width:100%}
+.hand > * + *{margin-left:var(--ov, -20px)}
+.rhand{height:calc(var(--rw) * 1.5 + 4px)}
+.phand{position:relative;display:block;height:calc(var(--ch) + 18px)}
+.phand > .card{position:absolute;left:0;top:16px;margin:0}
+
+.card{
+  position:relative;flex:0 0 auto;width:var(--cw);height:var(--ch);padding:0;border:0;background:none;
+  border-radius:calc(var(--cw) * .085);box-shadow:0 2px 3px rgba(0,0,0,.3), 0 6px 12px rgba(0,0,0,.25);
+  transition:transform .18s ease, filter .18s ease, box-shadow .18s ease;
+}
+.card svg{display:block;width:100%;height:100%}
+.card.small{width:var(--rw);height:calc(var(--rw) * 1.5);box-shadow:0 2px 4px rgba(0,0,0,.35)}
+.phand .card.ok{transform:translateY(-14px);box-shadow:0 0 0 3px var(--brass), 0 10px 18px rgba(0,0,0,.45)}
+.phand .card.no{filter:brightness(.6) saturate(.65)}
+.phand .card.new{animation:dealIn .4s ease-out}
+.rhand .card.new{animation:dealDown .4s ease-out}
+.card.shake{animation:shake .35s}
+@keyframes dealIn{from{opacity:0;transform:translateY(-60px) scale(.85)}}
+@keyframes dealDown{from{opacity:0;transform:translateY(40px) scale(.8)}}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+
+/* middle of the table */
+.middle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:0}
+.piles{display:flex;align-items:center;justify-content:center;gap:clamp(22px, 8vw, 56px)}
+.deck,.pile{position:relative;width:var(--cw);height:var(--ch)}
+.deck{padding:0;border:0;background:none;border-radius:calc(var(--cw) * .085)}
+.deck .card{position:absolute;left:0;top:0}
+.deck .card:nth-child(1){transform:translate(4px,4px)}
+.deck .card:nth-child(2){transform:translate(2px,2px)}
+.deck:disabled{cursor:default}
+.deck.live .card:last-of-type{box-shadow:0 0 0 3px var(--brass), 0 8px 16px rgba(0,0,0,.4)}
+.count{position:absolute;right:-10px;bottom:-10px;min-width:34px;height:34px;padding:0 6px;border-radius:17px;background:var(--ink);color:var(--paper);border:2px solid var(--brass);font-weight:700;font-size:16px;display:grid;place-items:center;font-variant-numeric:tabular-nums;z-index:2}
+.pile .card{position:absolute;left:0;top:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r))}
+.pile .card.from-p{animation:fromP .38s cubic-bezier(.2,.8,.3,1)}
+.pile .card.from-r{animation:fromR .38s cubic-bezier(.2,.8,.3,1)}
+@keyframes fromP{from{transform:translate(0,45vh) rotate(0deg) scale(1.05)}}
+@keyframes fromR{from{transform:translate(0,-35vh) rotate(0deg) scale(.7)}}
+.empty{width:100%;height:100%;border-radius:calc(var(--cw) * .085);border:2px dashed rgba(244,238,219,.3)}
+
+.chip{display:inline-flex;align-items:center;gap:8px;padding:4px 14px 4px 6px;border-radius:999px;background:var(--paper);color:var(--ink);font-weight:700;font-size:17px;box-shadow:0 3px 8px rgba(0,0,0,.35)}
+.chip svg{width:30px;height:30px}
+.status{width:min(100%, 30em);text-align:center;padding:8px 14px;border-radius:14px;background:rgba(0,0,0,.26);border:1px solid rgba(221,183,92,.45);line-height:1.3}
+.status .log{display:block;font-size:15px;color:var(--chalk-dim);min-height:1.3em}
+.status .say{display:block;font-size:clamp(17px, 4.4vw, 20px);font-weight:700;text-wrap:balance}
+
+.actions{display:flex;justify-content:center}
+.act{min-height:56px;min-width:min(100%, 240px);padding:0 26px;border:0;border-radius:16px;background:var(--brass);color:var(--ink);font-size:20px;font-weight:700;box-shadow:0 4px 0 var(--brass-deep), 0 8px 16px rgba(0,0,0,.35);transition:transform .1s, opacity .2s}
+.act:active{transform:translateY(3px);box-shadow:0 1px 0 var(--brass-deep)}
+.act:disabled{opacity:.45;cursor:default;transform:none}
+
+/* sheets */
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(8,22,14,.68);padding:20px max(16px, env(safe-area-inset-right, 0px)) 20px max(16px, env(safe-area-inset-left, 0px));animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.sheet{width:min(100%, 430px);max-height:100%;overflow:auto;background:var(--paper);color:var(--ink);border-radius:22px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.sheet h2{font-family:var(--f-disp);font-weight:700;font-size:28px;margin:0 0 6px;text-wrap:balance}
+.sheet p{font-size:18px;line-height:1.45;margin:0 0 14px}
+.sheet ul{padding-left:1.1em;margin:0 0 16px;font-size:18px;line-height:1.45}
+.sheet li + li{margin-top:6px}
+.suits{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.suits button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;border-radius:16px;border:2px solid #d9cba3;background:#fff;color:var(--ink);font-size:19px;font-weight:700}
+.suits button:active{background:#f2ead2}
+.suits svg{width:58px;height:58px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row button{flex:1 1 140px;min-height:52px;border-radius:14px;font-size:18px;font-weight:700}
+.primary{border:0;background:var(--felt);color:var(--chalk)}
+.second{border:2px solid #cbbd94;background:#fff;color:var(--ink)}
+.big-emblem{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
+.big-emblem svg{width:40px;height:40px}
+
+svg .ci{font-family:var(--f-disp);font-weight:700;font-size:15px}
+svg .rib{font-family:var(--f-disp);font-weight:700;font-size:12.5px;letter-spacing:1px}
+
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+.info{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;min-width:0}
+.mine{min-width:0}
+
+/* malá výška na výšku */
+@media (orientation: portrait) and (max-height:600px){
+  :root{--cw:min(18vw, 12vh, 100px)}
+  .act{min-height:50px}
+}
+
+/* tablet: větší písmo a tlačítka */
+@media (min-width:700px) and (min-height:700px){
+  body{font-size:19px}
+  .ghost{min-height:52px;padding:0 18px;font-size:19px}
+  .wallet .score{font-size:16px}
+  .who{font-size:19px}
+  .status .log{font-size:17px}
+  .status .say{font-size:23px}
+  .act{min-height:66px;font-size:23px;padding:0 34px;min-width:280px}
+  .chip{font-size:20px}
+  .chip svg{width:36px;height:36px}
+  .sheet{width:min(100%, 520px);padding:30px}
+  .sheet h2{font-size:34px}
+  .sheet p,.sheet ul{font-size:20px}
+  .suits svg{width:72px;height:72px}
+  .table{padding:16px 22px 20px;gap:10px}
+}
+
+/* na šířku: soupeř nahoře mezi kreditem a tlačítky, uprostřed balíčky vedle zpráv, dole ruka přes celou šířku */
+@media (orientation: landscape){
+  :root{--cw:min(19.5vh, 11vw, 150px);--rw:calc(var(--cw) * .52)}
+  .table{
+    grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"wallet robot tools" "mid mid mid" "mine mine mine";
+    column-gap:16px;row-gap:4px;padding-top:8px;padding-bottom:8px;
+  }
+  .bar{display:contents}
+  .wallet{grid-area:wallet;align-self:start}
+  .tools{grid-area:tools;align-self:start}
+  .robot{grid-area:robot}
+  .middle{grid-area:mid;flex-direction:row;gap:clamp(20px, 4vw, 56px)}
+  .info{width:auto;flex:0 1 30em;max-width:30em;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"st st" "chip act";gap:8px;align-items:center}
+  .info .status{grid-area:st;width:100%}
+  #suitChip{grid-area:chip}
+  .info .actions{grid-area:act}
+  #suitChip[hidden] + .status + .actions{grid-column:1 / -1}
+  .mine{grid-area:mine}
+  .phand{padding-top:14px;height:calc(var(--ch) + 16px)}
+  .who{font-size:14px}
+  .status{padding:6px 12px}
+  .status .say{font-size:clamp(16px, 2.6vw, 22px)}
+  .act{min-height:50px}
+  .overlay{padding-top:max(12px, env(safe-area-inset-top, 0px));padding-bottom:max(12px, env(safe-area-inset-bottom, 0px))}
+  .sheet{max-height:calc(100% - 4px);padding:18px 22px}
+  .suits{grid-template-columns:repeat(4, 1fr)}
+}
+@media (orientation: landscape) and (max-height:500px){
+  .ghost{min-height:40px;padding:0 10px;font-size:15px}
+  .credit{font-size:20px}
+  .status .log{font-size:13px}
+  .sheet h2{font-size:24px}
+  .sheet p,.sheet ul{font-size:16px;margin-bottom:10px}
+  .suits button{padding:8px 4px;font-size:16px}
+  .suits svg{width:44px;height:44px}
+  .row button{min-height:46px}
+}
+@media (orientation: portrait) and (min-width:700px) and (min-height:900px){
+  :root{--cw:min(21vw, 14vh, 175px)}
+}
+@media (orientation: landscape) and (min-height:700px){
+  :root{--cw:min(20vh, 12vw, 170px)}
+  .act{min-height:62px}
+  .who{font-size:18px}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="s-srdce" viewBox="0 0 100 100">
+      <path d="M50 90 C22 68 6 52 6 33 C6 18 17 8 30 8 C40 8 47 14 50 22 C53 14 60 8 70 8 C83 8 94 18 94 33 C94 52 78 68 50 90Z" fill="#c62f2a" stroke="#7d1512" stroke-width="2.5"/>
+      <ellipse cx="29" cy="28" rx="9" ry="6" fill="#fff" opacity=".28" transform="rotate(-30 29 28)"/>
+    </symbol>
+    <symbol id="s-listy" viewBox="0 0 100 100">
+      <path d="M50 4 C61 19 87 30 87 56 C87 74 72 84 56 81 L54 97 L46 97 L44 81 C28 84 13 74 13 56 C13 30 39 19 50 4Z" fill="#3f8a2e" stroke="#1f4d16" stroke-width="2.5"/>
+      <path d="M50 14 V86 M50 38 L35 30 M50 38 L65 30 M50 56 L30 48 M50 56 L70 48 M50 72 L36 67 M50 72 L64 67" stroke="#24561a" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-kule" viewBox="0 0 100 100">
+      <circle cx="50" cy="53" r="40" fill="#ebb733" stroke="#b8321f" stroke-width="7"/>
+      <path d="M13 53 H87" stroke="#b8321f" stroke-width="4"/>
+      <circle cx="50" cy="32" r="5.5" fill="#b8321f"/>
+      <path d="M36 72 Q50 82 64 72" stroke="#8a2a17" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="34" cy="36" rx="8" ry="5" fill="#fff" opacity=".35" transform="rotate(-35 34 36)"/>
+    </symbol>
+    <symbol id="s-zaludy" viewBox="0 0 100 100">
+      <rect x="46" y="3" width="8" height="18" rx="3" fill="#4c2a0e"/>
+      <path d="M25 48 C25 77 39 97 50 97 C61 97 75 77 75 48Z" fill="#dca63c" stroke="#8a5a1a" stroke-width="2.5"/>
+      <path d="M40 60 C40 76 45 86 50 89" stroke="#fff" stroke-width="4" opacity=".3" fill="none" stroke-linecap="round"/>
+      <path d="M13 50 C13 22 87 22 87 50 C87 57 13 57 13 50Z" fill="#7a4a1f" stroke="#4c2a0e" stroke-width="2.5"/>
+      <path d="M26 36 L34 46 M38 30 L46 44 M52 29 L58 43 M66 32 L70 45 M24 46 L36 34 M38 47 L52 31 M54 47 L68 33" stroke="#4c2a0e" stroke-width="2" opacity=".65"/>
+    </symbol>
+    <pattern id="backpat" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="10" height="10" fill="#8c1f22"/>
+      <path d="M0 0 H10 M0 0 V10" stroke="#d8b45a" stroke-width="1.2" opacity=".55"/>
+    </pattern>
+  </defs>
+</svg>
+
+<div class="app">
+  <main class="table" id="table">
+    <header class="bar">
+      <div class="wallet"><div class="credit" id="credit" aria-label="Kredit">100 Kč</div><div class="score" id="score">Ty 0 : 0 Robot</div></div>
+      <div class="tools">
+        <button class="ghost" id="btnRules" type="button">Pravidla</button>
+        <button class="ghost" id="btnNew" type="button">Nová hra</button>
+      </div>
+    </header>
+    <section class="robot" aria-label="Karty robota">
+      <p class="who" id="robotLabel">Robot · 5 karet</p>
+      <div class="hand rhand" id="rhand"></div>
+    </section>
+    <section class="middle">
+      <div class="piles">
+        <button class="deck" id="deck" type="button" aria-label="Balíček – líznout si"></button>
+        <div class="pile" id="pile" aria-label="Odkládací balíček"></div>
+      </div>
+      <div class="info">
+        <div id="suitChip" hidden></div>
+        <div class="status" role="status" aria-live="polite"><span class="log" id="log"></span><span class="say" id="say"></span></div>
+        <div class="actions"><button class="act" id="act" type="button">Líznout kartu</button></div>
+      </div>
+    </section>
+    <section class="mine" aria-label="Tvoje karty">
+      <div class="hand phand" id="phand"></div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="picker" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="pickTitle">
+    <h2 id="pickTitle">Na jakou barvu měníš?</h2>
+    <p>Svrškem si vybereš, v jaké barvě se bude hrát dál.</p>
+    <div class="suits" id="suitBtns"></div>
+    <div class="row"><button class="second" id="pickBack" type="button">Zpět, nehrát svrška</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="rules" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="rulesTitle">
+    <h2 id="rulesTitle">Jak se hraje prší</h2>
+    <ul>
+      <li>Na kartu na stole přilož kartu <b>stejné barvy</b> nebo <b>stejné hodnoty</b>.</li>
+      <li><b>Svrška</b> můžeš dát kdykoli a vybereš si novou barvu.</li>
+      <li><b>Sedma</b>: soupeř si bere 2 karty, pokud nepřebije svou sedmou. Pak se bere 4, 6…</li>
+      <li><b>Eso</b>: soupeř stojí, pokud nepřebije svým esem.</li>
+      <li>Když nemáš co zahrát, lízni si kartu z balíčku.</li>
+      <li>Vyhrává, kdo se první zbaví všech karet.</li>
+      <li><b>Peníze:</b> začínáš se 100 Kč. Když vyhraješ, dostaneš 10 Kč za každou kartu, která zůstala robotovi. Když prohraješ, zaplatíš 5 Kč za každou kartu, která zůstala tobě.</li>
+      <li>První karta na stole na začátku hry nic nedělá: sedma se nebere, u esa se nestojí a svršek nemění barvu.</li>
+      <li>Když ti dojdou peníze, hra končí a začíná se znovu se 100 Kč.</li>
+    </ul>
+    <p>Karty, které právě můžeš zahrát, jsou povytažené a svítí. Ostatní jsou ztmavené.</p>
+    <div class="row"><button class="primary" id="rulesOk" type="button">Rozumím</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="confirmNew" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="newTitle">
+    <h2 id="newTitle">Začít novou hru?</h2>
+    <p id="newText">Rozehraná hra skončí a karty se znovu zamíchají.</p>
+    <div class="row">
+      <button class="second" id="newNo" type="button">Hrát dál</button>
+      <button class="primary" id="newYes" type="button">Vzdát a začít novou</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="endSheet" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="endTitle">
+    <div class="big-emblem" id="endEmblem"></div>
+    <h2 id="endTitle"></h2>
+    <span class="money" id="endMoney"></span>
+    <p id="endText"></p>
+    <div class="row"><button class="primary" id="again" type="button">Hrát znovu</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const SUITS = {
+  srdce:  {n:"Srdce",  adj:"srdcov",  col:"#b8261f"},
+  listy:  {n:"Listy",  adj:"listov",  col:"#2f6e22"},
+  kule:   {n:"Kule",   adj:"kulov",   col:"#b05a0c"},
+  zaludy: {n:"Žaludy", adj:"žaludov", col:"#6a3e17"}
+};
+const SK = ["srdce","listy","kule","zaludy"];
+const RANKS = ["7","8","9","10","S","V","K","E"];
+const RINFO = {
+  "7":{c:"VII",n:"sedma",g:"f"}, "8":{c:"VIII",n:"osma",g:"f"}, "9":{c:"IX",n:"devítka",g:"f"}, "10":{c:"X",n:"desítka",g:"f"},
+  S:{c:"Sp",n:"spodek",g:"m"}, V:{c:"Sv",n:"svršek",g:"m"}, K:{c:"K",n:"král",g:"m"}, E:{c:"E",n:"eso",g:"n"}
+};
+const END = {f:"á", m:"ý", n:"é"};
+const cardName = c => SUITS[c.s].adj + END[RINFO[c.r].g] + " " + RINFO[c.r].n;
+const kartu = n => n===1 ? "kartu" : (n>=2 && n<=4 ? "karty" : "karet");
+const karta = n => n===1 ? "karta" : (n>=2 && n<=4 ? "karty" : "karet");
+const other = w => w==="p" ? "r" : "p";
+
+/* ---------- card drawing ---------- */
+const PIPS = {
+  "7":[[33,34],[67,34],[50,55],[33,76],[67,76],[33,117],[67,117]],
+  "8":[[33,34],[67,34],[50,55],[33,76],[67,76],[50,97],[33,117],[67,117]],
+  "9":[[31,38],[50,38],[69,38],[31,75],[50,75],[69,75],[31,112],[50,112],[69,112]],
+  "10":[[28,30],[72,30],[50,50],[28,59],[72,59],[28,88],[72,88],[50,98],[28,117],[72,117]]
+};
+const use = (k,x,y,s) => `<use href="#s-${k}" x="${x}" y="${y}" width="${s}" height="${s}"/>`;
+const pip = (k,x,y,s) => use(k, x-s/2, y-s/2, s);
+
+const LINE = "#3a2414", SKIN = "#f1c7a1";
+const COATS = ["#b8261f","#2f6e22","#2c4f8c","#c48a1c","#6a3e17"];
+const coat = (c, shift) => COATS[(SK.indexOf(c.s) + shift) % COATS.length];
+function halfFigure(c){
+  const k = c.s, K = c.r==="K", V = c.r==="V";
+  const main = coat(c, K ? 0 : V ? 1 : 2), trim = coat(c, K ? 3 : V ? 4 : 0);
+  const hair = K ? "#e9e2cf" : V ? "#5a3412" : "#a8661f";
+  let g = "";
+  // trup
+  g += `<path d="M16 75 C18 57 31 51 50 51 C69 51 82 57 84 75Z" fill="${main}" stroke="${LINE}" stroke-width="1.2"/>`;
+  g += `<path d="M50 52 V75" stroke="${trim}" stroke-width="6"/>`;
+  g += `<circle cx="50" cy="61" r="1.7" fill="#ddb75c"/><circle cx="50" cy="69" r="1.7" fill="#ddb75c"/>`;
+  // ruce
+  if (V) g += `<path d="M27 60 C20 50 18 40 20 30 L27 30 C27 40 30 48 35 54Z" fill="${main}" stroke="${LINE}" stroke-width="1.1"/><circle cx="23.5" cy="28.5" r="3.6" fill="${SKIN}" stroke="${LINE}" stroke-width=".9"/>`;
+  else if (K) g += `<path d="M72 74 L78 24" stroke="#ddb75c" stroke-width="2.8" stroke-linecap="round"/><circle cx="78.3" cy="21" r="3.6" fill="#ddb75c" stroke="#7a5a12" stroke-width="1"/><circle cx="73.5" cy="62" r="3.6" fill="${SKIN}" stroke="${LINE}" stroke-width=".9"/>`;
+  else g += `<path d="M28 57 C24 61 24 65 26 69 L31 68 C30 64 31 61 34 58Z" fill="${main}" stroke="${LINE}" stroke-width="1"/><circle cx="28.5" cy="68" r="3.4" fill="${SKIN}" stroke="${LINE}" stroke-width=".9"/>`;
+  // límec, krk, hlava
+  g += `<path d="M38 53 Q50 61 62 53 L60 49 Q50 55 40 49Z" fill="#fbf6e8" stroke="${LINE}" stroke-width="1"/>`;
+  g += `<rect x="46" y="44" width="8" height="7" fill="${SKIN}"/>`;
+  g += `<path d="M38.5 39 C38 26 62 26 61.5 39 L62 46 L38 46Z" fill="${hair}"/>`;
+  g += `<ellipse cx="50" cy="37" rx="10" ry="11.5" fill="${SKIN}" stroke="${LINE}" stroke-width="1.1"/>`;
+  g += `<circle cx="46" cy="35.5" r="1.2" fill="${LINE}"/><circle cx="54" cy="35.5" r="1.2" fill="${LINE}"/>`;
+  g += `<path d="M50 36 L48.8 40.5 L51 40.5" stroke="${LINE}" stroke-width=".9" fill="none"/>`;
+  if (K) g += `<path d="M41 41 Q42 53 50 55 Q58 53 59 41 Q55 46 50 46 Q45 46 41 41Z" fill="${hair}" stroke="${LINE}" stroke-width=".8"/>`;
+  g += `<path d="M44.5 43.2 Q50 40.6 55.5 43.2 Q50 42.6 44.5 43.2Z" fill="${hair}" stroke="${LINE}" stroke-width=".7"/>`;
+  // pokrývka hlavy
+  if (K) g += `<path d="M38 28 L36 15 L43 21 L50 11 L57 21 L64 15 L62 28Z" fill="#ddb75c" stroke="#7a5a12" stroke-width="1.3" stroke-linejoin="round"/><rect x="37.5" y="26" width="25" height="4.5" rx="1" fill="${trim}" stroke="#7a5a12" stroke-width=".8"/><circle cx="36" cy="15" r="2" fill="#b8261f"/><circle cx="50" cy="11" r="2.2" fill="#b8261f"/><circle cx="64" cy="15" r="2" fill="#b8261f"/>`;
+  else if (V) g += `<path d="M60 23 C69 13 79 12 87 6 C82 18 73 23 62 26Z" fill="#fbf6e8" stroke="${LINE}" stroke-width=".9"/><path d="M39 28 C39 16 61 16 61 28Z" fill="${trim}" stroke="${LINE}" stroke-width="1"/><path d="M29 29 Q50 22 71 29 Q50 34 29 29Z" fill="${trim}" stroke="${LINE}" stroke-width="1"/>`;
+  else g += `<path d="M38 30 C36 16 64 16 62 30Z" fill="${trim}" stroke="${LINE}" stroke-width="1"/><path d="M37 30 H63" stroke="${LINE}" stroke-width="2.4"/><circle cx="50" cy="17.5" r="2.4" fill="${main}" stroke="${LINE}" stroke-width=".7"/>`;
+  // symbol barvy (svršek nahoře, spodek dole, král v rohu)
+  if (V) g += use(k, 9, 3, 23);
+  else if (K) g += use(k, 7, 6, 17);
+  else g += use(k, 8, 50, 21);
+  return g;
+}
+function season(k){
+  if (k === "srdce") { // jaro – kvítí
+    const bl = (x,y) => [0,72,144,216,288].map(a => `<circle cx="${x+4*Math.cos(a*Math.PI/180)}" cy="${y+4*Math.sin(a*Math.PI/180)}" r="3" fill="#f2a6b5" stroke="#b05a6a" stroke-width=".6"/>`).join("") + `<circle cx="${x}" cy="${y}" r="2" fill="#f0c33c"/>`;
+    return `<path d="M30 30 Q50 20 70 30" stroke="#5a3a1a" stroke-width="1.6" fill="none"/><path d="M40 26 l-5 -6 l7 1z M60 26 l5 -6 l-7 1z" fill="#4f9a3a"/>` + bl(34,28) + bl(50,20) + bl(66,28);
+  }
+  if (k === "kule") { // léto – slunce
+    let r = ""; for (let i=0;i<12;i++){ const a = i*Math.PI/6; r += `<path d="M${50+11*Math.cos(a)} ${22+11*Math.sin(a)} L${50+16*Math.cos(a)} ${22+16*Math.sin(a)}" stroke="#d98a12" stroke-width="2" stroke-linecap="round"/>`; }
+    return r + `<circle cx="50" cy="22" r="8.5" fill="#f2bf2e" stroke="#d98a12" stroke-width="1.4"/>`;
+  }
+  if (k === "zaludy") { // podzim – hrozen
+    const pts = [[44,17],[50,17],[56,17],[47,23],[53,23],[50,29]];
+    return `<path d="M50 12 Q53 6 58 6" stroke="#5a3a1a" stroke-width="1.6" fill="none"/><path d="M52 11 C58 4 68 7 66 13 C62 15 56 14 52 11Z" fill="#c4761c" stroke="#7a4a1f" stroke-width=".8"/>` +
+      pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3.6" fill="#6c3a7a" stroke="#3e1f48" stroke-width=".7"/>`).join("");
+  }
+  // listy – zima, vločka
+  let f = ""; for (let i=0;i<6;i++){ const a = i*Math.PI/3, ex = 50+13*Math.cos(a), ey = 22+13*Math.sin(a), mx = 50+8*Math.cos(a), my = 22+8*Math.sin(a);
+    f += `<path d="M50 22 L${ex} ${ey} M${mx} ${my} L${mx+4*Math.cos(a+0.9)} ${my+4*Math.sin(a+0.9)} M${mx} ${my} L${mx+4*Math.cos(a-0.9)} ${my+4*Math.sin(a-0.9)}" stroke="#4a7fb8" stroke-width="1.8" stroke-linecap="round"/>`; }
+  return f;
+}
+function faceSVG(c){
+  const col = SUITS[c.s].col, k = c.s, R = RINFO[c.r];
+  let body = "";
+  if (PIPS[c.r]) {
+    const s = (c.r==="10"||c.r==="9") ? 18 : 20;
+    const corner = `<text x="10" y="19" class="ci" fill="${LINE}">${R.c}</text>`;
+    body = PIPS[c.r].map(p => pip(k, p[0], p[1], s)).join("") + corner + `<g transform="rotate(180 50 75)">${corner}</g>`;
+  } else if (c.r === "E") {
+    const vine = `<path d="M16 75 C16 58 28 52 27 42 M16 75 C14 70 10 68 9 62" stroke="${col}" stroke-width="1.5" fill="none" opacity=".55"/><path d="M27 48 c-6 -1 -8 -6 -6 -9 c4 1 6 5 6 9z" fill="${col}" opacity=".45"/>`;
+    const quarter = vine + `<g transform="translate(100 0) scale(-1 1)">${vine}</g>`;
+    body = `<g>${season(k)}${quarter}</g><g transform="rotate(180 50 75)">${season(k)}${quarter}</g>` + pip(k, 50, 75, 52);
+  } else {
+    const half = halfFigure(c);
+    body = `<g>${half}</g><g transform="rotate(180 50 75)">${half}</g><path d="M7 75 H93" stroke="${LINE}" stroke-width="1.1"/>`;
+  }
+  return `<svg viewBox="0 0 100 150" aria-hidden="true">
+    <rect x="1" y="1" width="98" height="148" rx="8" fill="#fbf6e8" stroke="#c9bb95" stroke-width="1.5"/>
+    <rect x="5" y="5" width="90" height="140" rx="5" fill="none" stroke="${LINE}" stroke-width=".8" opacity=".55"/>
+    ${body}</svg>`;
+}
+const BACK = `<svg viewBox="0 0 100 150" aria-hidden="true">
+  <rect x="1" y="1" width="98" height="148" rx="8" fill="#fbf6e8" stroke="#c9bb95" stroke-width="1.5"/>
+  <rect x="7" y="7" width="86" height="136" rx="5" fill="url(#backpat)"/>
+  <rect x="11.5" y="11.5" width="77" height="127" rx="3" fill="none" stroke="#ddb75c" stroke-width="1.6"/>
+  <ellipse cx="50" cy="75" rx="20" ry="26" fill="#6f1418" stroke="#ddb75c" stroke-width="2"/>
+  ${use("srdce",41,57,18)}${use("listy",41,75,18)}</svg>`;
+
+/* ---------- game state ---------- */
+let S = null;
+let busy = false;
+let pendingSvrsek = null;
+let robotTimer = null;
+let score = {p:0, r:0};
+let credit = 100;
+let shownCredit = null;
+const store = {
+  get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+
+function rnd(n){
+  try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
+  catch(e){ return Math.floor(Math.random()*n); }
+}
+function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=rnd(i+1); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function scatter(c){ c.rot = rnd(29)-14; c.dx = rnd(13)-6; c.dy = rnd(11)-5; return c; }
+
+function newGame(starter){
+  const deck = [];
+  SK.forEach(s => RANKS.forEach(r => deck.push({id:s+"-"+r, s, r})));
+  shuffle(deck);
+  const p = [], r = [];
+  for (let i=0;i<5;i++){ p.push(deck.pop()); r.push(deck.pop()); }
+  const top = scatter(deck.pop());
+  S = {deck, pile:[top], p, r, turn:starter, nextStarter:other(starter),
+       suit:top.s, pen: 0, ace: false,
+       over:null, log:"Karty jsou rozdané, po pěti.", fresh:[], anim:null};
+  if (top.r==="7" || top.r==="E" || top.r==="V")
+    S.log = `Na stole začíná ${RINFO[top.r].n}. První karta neplatí, hraje se normálně.`;
+}
+
+const top = () => S.pile[S.pile.length-1];
+function valid(c){
+  if (S.pen) return c.r==="7";
+  if (S.ace) return c.r==="E";
+  return c.r==="V" || c.s===S.suit || c.r===top().r;
+}
+
+function draw(who, n){
+  let got = 0;
+  for (let i=0;i<n;i++){
+    if (!S.deck.length){
+      if (S.pile.length < 2) break;
+      const keep = S.pile.pop();
+      S.deck = shuffle(S.pile);
+      S.pile = [keep];
+    }
+    const c = S.deck.pop();
+    S[who].push(c); S.fresh.push(c.id); got++;
+  }
+  return got;
+}
+
+function play(who, id, chosen){
+  const hand = S[who];
+  const i = hand.findIndex(c => c.id===id);
+  if (i<0) return;
+  const c = scatter(hand.splice(i,1)[0]);
+  S.pile.push(c);
+  S.anim = {id:c.id, from:who};
+  S.suit = c.s;
+  if (c.r==="7") S.pen += 2;
+  if (c.r==="E") S.ace = true;
+  if (c.r==="V") S.suit = chosen;
+  const name = cardName(c);
+  if (who==="r") S.log = c.r==="V" ? `Robot zahrál ${name} a mění na ${SUITS[chosen].n.toLowerCase()}.` : `Robot zahrál ${name}.`;
+  else S.log = c.r==="V" ? `Zahrála jsi ${name}, měníš na ${SUITS[chosen].n.toLowerCase()}.` : `Zahrála jsi ${name}.`;
+  if (!hand.length){ finish(who); return; }
+  S.turn = other(who);
+  commit();
+}
+
+function pass(who){
+  if (S.pen){
+    const n = draw(who, S.pen);
+    S.log = who==="r" ? `Robot si bere ${n} ${kartu(n)}.` : `Bereš si ${n} ${kartu(n)}.`;
+    S.pen = 0;
+  } else if (S.ace){
+    S.ace = false;
+    S.log = who==="r" ? "Robot stojí." : "Stojíš, robot hraje dál.";
+  } else {
+    const n = draw(who, 1);
+    S.log = who==="r" ? (n ? "Robot si líznul kartu." : "Robot nemá co hrát.") : (n ? "Líznula sis kartu." : "Balíček je prázdný.");
+  }
+  S.anim = null;
+  S.turn = other(who);
+  commit();
+}
+
+function finish(who){
+  S.over = who;
+  score[who]++;
+  S.delta = who==="p" ? 10 * S.r.length : -5 * S.p.length;
+  credit = Math.max(0, credit + S.delta);
+  store.set("prsi-credit", credit);
+  store.set("prsi-score", score);
+  commit();
+}
+const zust = n => n===1 ? "zůstala" : (n>=2 && n<=4 ? "zůstaly" : "zůstalo");
+
+/* ---------- robot ---------- */
+function bestSuit(hand){
+  const cnt = {}; SK.forEach(s => cnt[s] = 0);
+  hand.forEach(c => { if (c.r!=="V") cnt[c.s]++; });
+  let best = SK[rnd(4)];
+  SK.forEach(s => { if (cnt[s] > cnt[best]) best = s; });
+  return best;
+}
+function robotPick(){
+  const h = S.r, v = h.filter(valid);
+  if (!v.length) return null;
+  if (S.pen || S.ace) return v[0];
+  const normal = v.filter(c => c.r!=="V");
+  if (!normal.length) return v[0];
+  const danger = S.p.length <= 2;
+  let best = null, bestScore = -1;
+  normal.forEach(c => {
+    let sc = h.filter(x => x.s===c.s && x.id!==c.id && x.r!=="V").length * 2 + rnd(3);
+    if (c.r==="7" || c.r==="E") sc += danger ? 12 : 1;
+    if (sc > bestScore){ bestScore = sc; best = c; }
+  });
+  return best;
+}
+function robotMove(){
+  robotTimer = null;
+  if (!S || S.over || S.turn!=="r") return;
+  const c = robotPick();
+  if (c) play("r", c.id, c.r==="V" ? bestSuit(S.r.filter(x => x.id!==c.id)) : null);
+  else pass("r");
+}
+function scheduleRobot(){
+  if (robotTimer || S.over || S.turn!=="r") return;
+  robotTimer = setTimeout(robotMove, 950);
+}
+
+/* ---------- player ---------- */
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+function onCard(btn){
+  if (S.over || S.turn!=="p") return;
+  const c = S.p.find(x => x.id===btn.dataset.id);
+  if (!c) return;
+  if (!valid(c)){
+    btn.classList.remove("shake"); void btn.offsetWidth; btn.classList.add("shake");
+    buzz(60);
+    return;
+  }
+  buzz(15);
+  if (c.r==="V"){ pendingSvrsek = c.id; openSheet("picker"); return; }
+  play("p", c.id);
+}
+function onPass(){
+  if (S.over || S.turn!=="p") return;
+  buzz(15);
+  pass("p");
+}
+
+/* ---------- rendering ---------- */
+const $ = id => document.getElementById(id);
+function commit(){
+  store.set("prsi-game", S);
+  render();
+  scheduleRobot();
+}
+function sorted(h){
+  return h.slice().sort((a,b) => SK.indexOf(a.s)-SK.indexOf(b.s) || RANKS.indexOf(a.r)-RANKS.indexOf(b.r));
+}
+function render(){
+  const fresh = new Set(S.fresh);
+  const mine = S.turn==="p" && !S.over;
+
+  $("score").textContent = `Ty ${score.p} : ${score.r} Robot`;
+  const cr = $("credit");
+  cr.textContent = `${credit} Kč`;
+  cr.classList.toggle("low", credit < 30);
+  if (shownCredit !== null && shownCredit !== credit){ cr.classList.remove("bump"); void cr.offsetWidth; cr.classList.add("bump"); }
+  shownCredit = credit;
+  $("robotLabel").textContent = `Robot · ${S.r.length} ${karta(S.r.length)}`;
+  $("rhand").innerHTML = S.r.map(c => `<div class="card small${fresh.has(c.id)?" new":""}">${BACK}</div>`).join("");
+
+  $("phand").innerHTML = sorted(S.p).map(c => {
+    const st = mine ? (valid(c) ? " ok" : " no") : "";
+    return `<button type="button" class="card${st}${fresh.has(c.id)?" new":""}" data-id="${c.id}" aria-label="${cardName(c)}">${faceSVG(c)}</button>`;
+  }).join("");
+
+  const deckN = S.deck.length;
+  const layers = Math.min(3, Math.max(deckN, 0));
+  $("deck").innerHTML = (deckN ? Array.from({length:layers}, () => `<div class="card">${BACK}</div>`).join("") : `<div class="empty"></div>`) +
+    `<span class="count" aria-hidden="true">${deckN}</span>`;
+  $("deck").disabled = !mine;
+  $("deck").classList.toggle("live", mine && !S.p.some(valid));
+
+  const shown = S.pile.slice(-4);
+  $("pile").innerHTML = shown.map(c => {
+    const a = S.anim && S.anim.id===c.id ? ` from-${S.anim.from}` : "";
+    return `<div class="card${a}" style="--r:${c.rot||0}deg;--dx:${c.dx||0}px;--dy:${c.dy||0}px">${faceSVG(c)}</div>`;
+  }).join("");
+
+  const t = top();
+  const chip = $("suitChip");
+  if (t.r==="V"){
+    chip.hidden = false;
+    chip.className = "chip";
+    chip.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true">${use(S.suit,0,0,100)}</svg>Hraje se: ${SUITS[S.suit].n}`;
+  } else chip.hidden = true;
+
+  $("log").textContent = S.log || "";
+  let say, act = "Líznout kartu";
+  if (S.over) say = S.over==="p" ? "Vyhrála jsi!" : "Robot vyhrál.";
+  else if (!mine) say = "Robot přemýšlí…";
+  else if (S.pen){ say = `Sedma! Přebij sedmou, nebo si vezmi ${S.pen} ${kartu(S.pen)}.`; act = `Vzít ${S.pen} ${kartu(S.pen)}`; }
+  else if (S.ace){ say = "Eso! Přebij esem, nebo stůj."; act = "Stojím"; }
+  else if (!S.p.some(valid)) say = "Nemáš co zahrát. Lízni si kartu.";
+  else say = "Jsi na řadě. Zahraj kartu, nebo si lízni.";
+  $("say").textContent = say;
+  $("act").textContent = act;
+  $("act").disabled = !mine;
+
+  if (S.over) showEnd();
+  S.fresh = []; S.anim = null;
+  layout();
+}
+function layout(){
+  const rh = $("rhand"), rn = rh.children.length;
+  if (rn){
+    const W = rh.clientWidth, cw = rh.children[0].offsetWidth;
+    const step = rn>1 ? Math.min(cw*1.05, (W-cw)/(rn-1)) : 0;
+    rh.style.setProperty("--ov", (step - cw) + "px");
+  }
+  // vlastní ruka: když je karet moc, rozloží se do dvou řad, aby byly rohy čitelné
+  const ph = $("phand"), cards = [...ph.children], n = cards.length;
+  if (!n) return;
+  const W = ph.clientWidth, cw = cards[0].offsetWidth, ch = cards[0].offsetHeight, lift = 16;
+  const stepFor = k => k>1 ? Math.min(cw*1.05, (W-cw)/(k-1)) : 0;
+  const rows = (n>1 && stepFor(n) < cw*0.42) ? 2 : 1;
+  const per = Math.ceil(n/rows), rowOff = Math.round(ch*0.5);
+  cards.forEach((c, i) => {
+    const row = Math.floor(i/per), idx = i % per, k = Math.min(per, n - row*per);
+    const st = stepFor(k), total = cw + st*(k-1);
+    c.style.left = Math.round((W-total)/2 + idx*st) + "px";
+    c.style.top = (lift + row*rowOff) + "px";
+  });
+  ph.style.height = (lift + ch + (rows-1)*rowOff + 2) + "px";
+}
+function showEnd(){
+  const won = S.over==="p";
+  $("endEmblem").innerHTML = SK.map(k => `<svg viewBox="0 0 100 100" aria-hidden="true">${use(k,0,0,100)}</svg>`).join("");
+  const d = S.delta || 0, m = $("endMoney");
+  m.textContent = (d >= 0 ? "+" : "−") + Math.abs(d) + " Kč";
+  m.className = "money " + (d >= 0 ? "plus" : "minus");
+  const nr = S.r.length, np = S.p.length;
+  if (credit <= 0){
+    $("endTitle").textContent = "Došly peníze";
+    $("endText").textContent = `Zůstalo ti ${np} ${karet(np)} a kredit klesl na 0 Kč. Tahle hra končí. Můžeš začít znovu se 100 Kč.`;
+    $("again").textContent = "Začít znovu se 100 Kč";
+  } else {
+    $("endTitle").textContent = won ? "Vyhrála jsi!" : (S.forfeit ? "Hra vzdána" : "Tentokrát vyhrál robot");
+    $("endText").textContent = won
+      ? `Robotovi ${zust(nr)} ${nr} ${karta(nr)}, za každou 10 Kč. Kredit je teď ${credit} Kč.`
+      : `Tobě ${zust(np)} ${np} ${karta(np)}, za každou 5 Kč. Kredit je teď ${credit} Kč.`;
+    $("again").textContent = "Hrát znovu";
+  }
+  openSheet("endSheet");
+}
+function openSheet(id){ $(id).hidden = false; const b = $(id).querySelector("button"); b && b.focus({preventScroll:true}); }
+function closeSheet(id){ $(id).hidden = true; }
+
+const karet = n => karta(n);
+function startNew(){
+  clearTimeout(robotTimer); robotTimer = null;
+  if (credit <= 0){ credit = 100; score = {p:0, r:0}; store.set("prsi-credit", credit); store.set("prsi-score", score); }
+  newGame(S ? S.nextStarter : "p");
+  ["endSheet","confirmNew","picker"].forEach(closeSheet);
+  commit();
+}
+
+/* ---------- wiring ---------- */
+$("suitBtns").innerHTML = SK.map(k => `<button type="button" data-suit="${k}"><svg viewBox="0 0 100 100" aria-hidden="true">${use(k,0,0,100)}</svg>${SUITS[k].n}</button>`).join("");
+$("suitBtns").addEventListener("click", e => {
+  const b = e.target.closest("button[data-suit]"); if (!b || !pendingSvrsek) return;
+  closeSheet("picker");
+  const id = pendingSvrsek; pendingSvrsek = null;
+  play("p", id, b.dataset.suit);
+});
+$("pickBack").onclick = () => { pendingSvrsek = null; closeSheet("picker"); };
+$("phand").addEventListener("click", e => { const b = e.target.closest(".card"); if (b) onCard(b); });
+$("deck").onclick = onPass;
+$("act").onclick = onPass;
+$("btnRules").onclick = () => openSheet("rules");
+$("rulesOk").onclick = () => closeSheet("rules");
+$("btnNew").onclick = () => {
+  if (S.over) return startNew();
+  const n = S.p.length;
+  $("newText").textContent = `Vzdaná hra se počítá jako prohra: zaplatíš ${5*n} Kč za ${n} ${kartu(n)} v ruce.`;
+  openSheet("confirmNew");
+};
+$("newNo").onclick = () => closeSheet("confirmNew");
+$("newYes").onclick = () => {
+  closeSheet("confirmNew");
+  if (S.over) return startNew();
+  clearTimeout(robotTimer); robotTimer = null;
+  pendingSvrsek = null; closeSheet("picker");
+  S.forfeit = true;
+  finish("r");
+};
+$("again").onclick = startNew;
+addEventListener("resize", layout);
+addEventListener("orientationchange", () => { layout(); setTimeout(layout, 250); setTimeout(layout, 600); });
+try { new ResizeObserver(() => layout()).observe($("table")); } catch(e) {}
+
+function start(data){
+  score = store.get("prsi-score") || {p:0, r:0};
+  const c = store.get("prsi-credit");
+  credit = typeof c === "number" ? c : 100;
+  if (credit <= 0){ credit = 100; score = {p:0, r:0}; store.set("prsi-credit", credit); store.set("prsi-score", score); }
+  const saved = (data && data.S) || store.get("prsi-game");
+  if (saved && saved.p && !saved.over) { S = saved; S.fresh = S.fresh || []; }
+  else newGame(saved && saved.nextStarter ? saved.nextStarter : "p");
+  commit();
+  if (!store.get("prsi-seen-rules")) { openSheet("rules"); store.set("prsi-seen-rules", true); }
+}
+const hot = window.claude && window.claude.hot;
+if (hot && hot.snapshot) hot.snapshot(() => ({S}));
+if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>
