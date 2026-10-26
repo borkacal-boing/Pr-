@@ -1183,6 +1183,26 @@ if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 
 <script>
 if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+// iPhone: aplikace z plochy kreslí pod stavovou lištu, ale CSS výška je o lištu menší.
+// Výšku proto nastavíme podle skutečného displeje.
+(function(){
+  const standalone = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+  if (!standalone) return;
+  function fit(){
+    const land = matchMedia("(orientation: landscape)").matches;
+    const full = land ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+    const h = Math.max(innerHeight, full);
+    const root = document.documentElement;
+    root.style.height = h + "px";
+    root.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    scrollTo(0, 0);
+  }
+  fit();
+  addEventListener("resize", fit);
+  addEventListener("orientationchange", () => { fit(); setTimeout(fit, 300); setTimeout(fit, 700); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(fit, 100); });
+})();
 </script>
 </body>
 </html>
