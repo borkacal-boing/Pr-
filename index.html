@@ -691,34 +691,57 @@ const Sound = (() => {
   // musette: dva jazýčky lehce rozladěné proti sobě + tišší oktáva dolů
   const MUSETTE = [["sawtooth",1,0,.5],["sawtooth",1,14,.42],["square",.5,-4,.22]];
   const BASSREED = [["sawtooth",1,0,.6],["square",1,6,.3]];
+  const REPS = 4;          // každá písnička se zahraje 4× za sebou
+  const FADE_IN = 1.5;     // s, náběh na začátku písničky
+  const FADE_OUT = 6;      // s, postupné ztišení na konci
+  const OVERLAP = 3;       // s, o kolik dřív začne další písnička (prolínání)
+  const SR = 24000;        // akordeon nepotřebuje víc, šetří paměť telefonu
   const cache = new Map();
-  function renderTune(i){
-    if (cache.has(i)) return cache.get(i);
+  // Jeden průchod písničky se nahraje jako bezešvá smyčka (rychlé i na telefonu),
+  // zvlášť se nahraje závěrečný akord. Opakování a ztišení řeší přehrávání.
+  function renderOffline(dur, draw){
     const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
     if (!OAC) return Promise.reject(new Error("no offline audio"));
-    const T = TUNES[i], e8 = 60 / T.bpm / 2, {ev, steps} = tuneEvents(T);
-    const sr = ctx.sampleRate, once = steps * e8, total = Math.ceil((once * 2 + 0.8) * sr);
-    const off = new OAC(1, total, sr), d = off.destination;
-    for (let rep = 0; rep < 2; rep++){              // každá písnička zazní dvakrát
-      const base = rep * once + 0.05;
-      ev.forEach(x => {
-        const t = base + x.t * e8;
-        if (x.k === "mel") reed(off, d, t, hz(x.n), x.len*e8*0.92, 0.16, 2600, MUSETTE);
-        else if (x.k === "bass") reed(off, d, t, hz(x.n), x.len*e8*0.8, 0.2, 700, BASSREED);
-        else x.ns.forEach(m => reed(off, d, t, hz(m), e8*0.45, 0.06, 1500, BASSREED));
-      });
-    }
-    const p = new Promise((res, rej) => {
+    const off = new OAC(1, Math.ceil(dur * SR), SR);
+    draw(off);
+    return new Promise((res, rej) => {
       off.oncomplete = e => res(e.renderedBuffer);
       const r = off.startRendering();
       if (r && r.then) r.then(res, rej);
     });
+  }
+  function renderTune(i){
+    if (cache.has(i)) return cache.get(i);
+    const T = TUNES[i], e8 = 60 / T.bpm / 2, {ev, steps} = tuneEvents(T);
+    const once = steps * e8, tail = 0.4, hold = e8 * T.meter * 2 * 1.5;
+    const loopP = renderOffline(once + tail, off => {
+      const d = off.destination;
+      ev.forEach(x => {
+        const t = x.t * e8;
+        if (x.k === "mel") reed(off, d, t, hz(x.n), x.len*e8*0.92, 0.16, 2600, MUSETTE);
+        else if (x.k === "bass") reed(off, d, t, hz(x.n), x.len*e8*0.8, 0.2, 700, BASSREED);
+        else x.ns.forEach(m => reed(off, d, t, hz(m), e8*0.45, 0.06, 1500, BASSREED));
+      });
+    }).then(rb => {
+      // dozvuk konce přeneseme na začátek, aby smyčka navazovala bez švu
+      const n = Math.round(once * SR), out = ctx.createBuffer(1, n, SR), d = out.getChannelData(0), r = rb.getChannelData(0);
+      d.set(r.subarray(0, n));
+      for (let k = n; k < r.length; k++) d[k - n] += r[k];
+      return out;
+    });
+    const endP = renderOffline(hold + 0.3, off => {
+      const d = off.destination, tonic = CH[T.harm.split(" ")[0]];
+      reed(off, d, 0, hz(tonic[0]), hold, 0.18, 700, BASSREED);
+      tonic[2].forEach(m => reed(off, d, 0, hz(m), hold, 0.05, 1500, BASSREED));
+      reed(off, d, 0, hz(tonic[2][2] + 12), hold, 0.12, 2600, MUSETTE);
+    });
+    const p = Promise.all([loopP, endP]).then(([loop, end]) => ({loop, end, once, total: once * REPS + end.duration}));
     cache.set(i, p);
-    // v paměti držíme jen pár písniček, ať to slabší telefon nezatěžuje
-    if (cache.size > 3) cache.delete(cache.keys().next().value);
+    while (cache.size > 2) cache.delete(cache.keys().next().value);
     return p;
   }
-  let src = null, order = [], idx = -1, gapTimer = null, wantMusic = false;
+  let order = [], idx = -1, current = null, queued = null, wantMusic = false, nextTimer = null;
+  const playing = new Set();       // právě znějící písničky (při prolínání i dvě)
   function nextIndex(){
     if (!order.length || idx >= order.length - 1){
       const last = order[order.length - 1];
@@ -728,40 +751,65 @@ const Sound = (() => {
     }
     return order[++idx];
   }
-  let current = null;
-  function playTune(i){
+  function fadeOutAll(sec){
+    const t = ctx.currentTime;
+    playing.forEach(p => {
+      p.gain.gain.cancelScheduledValues(t);
+      p.gain.gain.setValueAtTime(p.gain.gain.value, t);
+      p.gain.gain.linearRampToValueAtTime(0, t + sec);
+      p.srcs.forEach(x => { try { x.stop(t + sec + 0.05); } catch(e){} });
+    });
+    playing.clear();
+  }
+  function playTune(i, when){
     current = i;
-    renderTune(i).then(buf => {
-      if (!wantMusic || src || current !== i || document.hidden || ctx.state !== "running") return;
-      const s = ctx.createBufferSource(); s.buffer = buf;
-      s.connect(musicBus); s.start(ctx.currentTime + 0.05);
-      src = s;
-      s.onended = () => {
-        if (src !== s) return;
-        src = null;
-        if (!wantMusic) return;
-        gapTimer = setTimeout(() => { gapTimer = null; if (wantMusic && !src) playTune(nextIndex()); }, 1200);
-      };
-      const nxtPeek = order[idx + 1];
-      if (nxtPeek !== undefined) setTimeout(() => renderTune(nxtPeek).catch(() => {}), 1500);
+    if (queued === i) queued = null;
+    renderTune(i).then(tn => {
+      if (!wantMusic || current !== i || document.hidden || ctx.state !== "running") return;
+      const t0 = Math.max(when || 0, ctx.currentTime + 0.05);
+      const tEnd = t0 + tn.once * REPS, tStop = t0 + tn.total;
+      const gn = ctx.createGain(), lg = ctx.createGain();
+      gn.connect(musicBus); lg.connect(gn);
+      // náběh, plná hlasitost, pozvolné ztišení během posledních vteřin
+      gn.gain.setValueAtTime(0.0001, t0);
+      gn.gain.exponentialRampToValueAtTime(1, t0 + FADE_IN);
+      gn.gain.setValueAtTime(1, tStop - FADE_OUT);
+      gn.gain.linearRampToValueAtTime(0.0001, tStop);
+      const s = ctx.createBufferSource(); s.buffer = tn.loop; s.loop = true; s.connect(lg);
+      lg.gain.setValueAtTime(1, tEnd); lg.gain.linearRampToValueAtTime(0, tEnd + 0.12);
+      s.start(t0); s.stop(tEnd + 0.15);
+      const e = ctx.createBufferSource(); e.buffer = tn.end; e.connect(gn); e.start(tEnd); e.stop(tStop + 0.05);
+      const entry = {gain: gn, srcs: [s, e]};
+      playing.add(entry);
+      e.onended = () => { playing.delete(entry); gn.disconnect(); };
+      // další písnička nastoupí, zatímco tahle doznívá
+      const nxt = queued !== null ? queued : nextIndex(), startNext = tStop - OVERLAP;
+      queued = nxt;
+      clearTimeout(nextTimer);
+      setTimeout(() => renderTune(nxt).catch(() => {}), 3000);
+      nextTimer = setTimeout(() => {
+        nextTimer = null;
+        if (wantMusic && current === i) playTune(nxt, startNext);
+      }, Math.max(0, (startNext - ctx.currentTime - 4) * 1000));
     }).catch(() => {});
   }
   function musicStart(){
     wantMusic = vol.music > 0;
-    if (!wantMusic || src || gapTimer || document.hidden || !ac() || ctx.state !== "running") return;
-    playTune(current === null ? nextIndex() : current);
+    if (!wantMusic || playing.size || nextTimer || document.hidden || !ac() || ctx.state !== "running") return;
+    playTune(current === null ? nextIndex() : current, 0);
   }
   function musicStop(){
     wantMusic = false;
-    if (gapTimer){ clearTimeout(gapTimer); gapTimer = null; }
-    if (src){ const s = src; src = null; try { s.stop(); } catch(e){} s.disconnect(); }
+    clearTimeout(nextTimer); nextTimer = null;
+    if (ctx) fadeOutAll(document.hidden ? 0.05 : 0.8);
   }
   function musicNext(){
-    if (gapTimer){ clearTimeout(gapTimer); gapTimer = null; }
-    if (src){ const s = src; src = null; try { s.stop(); } catch(e){} s.disconnect(); }
-    current = nextIndex();
+    clearTimeout(nextTimer); nextTimer = null;
+    fadeOutAll(1.5);
     wantMusic = vol.music > 0;
-    if (wantMusic && ac() && ctx.state === "running") playTune(current);
+    const i = queued !== null ? queued : nextIndex();
+    queued = null; current = i;
+    if (wantMusic && ctx.state === "running") playTune(i, ctx.currentTime + 0.6);
   }
   function duck(sec){
     if (!musicOut) return;
